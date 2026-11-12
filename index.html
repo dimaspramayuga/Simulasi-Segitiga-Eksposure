@@ -1,0 +1,2955 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>Digital Exposure Lab — Interactive Photography Learning</title>
+<style>
+/* ============ TOKENS & RESET ============ */
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#101214; --bg2:#191D21; --card:#22282D; --card2:#2A3138;
+  --accent:#D9A441; --accent2:#B9D78A;
+  --text:#F5F5F0; --text2:#A5ADB5; --line:#31383E;
+  --danger:#E4736A; --info:#7FB7E3; --warn:#E8B75A;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  font-size:15px;line-height:1.55;overflow-x:hidden;-webkit-font-smoothing:antialiased;
+}
+img{max-width:100%;display:block}
+button{font-family:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.mono{font-family:var(--mono)}
+.muted{color:var(--text2)}
+.accent{color:var(--accent)}
+.accent2{color:var(--accent2)}
+
+/* ============ TOP BAR ============ */
+#topbar{position:sticky;top:0;z-index:60;background:linear-gradient(180deg,#191D21 0%,#14171A 100%);border-bottom:1px solid var(--line);box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.app-header{display:flex;align-items:center;gap:14px;padding:11px 18px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-logo{width:40px;height:40px;flex:none;background:rgba(217,164,65,.12);border:1px solid rgba(217,164,65,.4);border-radius:10px;display:grid;place-items:center}
+.brand h1{font-size:16px;letter-spacing:.16em;font-weight:800;white-space:nowrap}
+.brand .sub{font-size:10.5px;color:var(--text2);letter-spacing:.1em;text-transform:uppercase}
+.header-actions{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;padding:6px 10px;border-radius:999px;border:1px solid var(--line);background:#15181B;color:var(--text2)}
+.badge.live{border-color:rgba(185,215,138,.5);color:var(--accent2)}
+.badge.live::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent2);box-shadow:0 0 8px var(--accent2)}
+.main-nav{display:flex;gap:6px;padding:0 14px 10px;overflow-x:auto;scrollbar-width:thin}
+.nav-btn{background:transparent;border:1px solid transparent;color:var(--text2);padding:8px 16px;border-radius:9px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;white-space:nowrap;transition:.18s}
+.nav-btn:hover{background:#22282D;color:var(--text)}
+.nav-btn.active{background:rgba(217,164,65,.14);border-color:rgba(217,164,65,.55);color:var(--accent);font-weight:700}
+
+/* ============ BUTTONS ============ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:#262D33;color:var(--text);padding:9px 15px;border-radius:10px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;transition:.18s;font-weight:600}
+.btn:hover{border-color:var(--accent);transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:linear-gradient(180deg,#E7B455,#C8933A);border-color:#E7B455;color:#17130B;font-weight:800}
+.btn-primary:hover{filter:brightness(1.07);border-color:#F3C873}
+.btn-ghost{background:transparent}
+.btn-green{background:rgba(185,215,138,.14);border-color:rgba(185,215,138,.5);color:var(--accent2)}
+.btn-danger{background:rgba(228,115,106,.12);border-color:rgba(228,115,106,.45);color:var(--danger)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+.btn-block{width:100%}
+
+/* ============ LAYOUT / VIEWS ============ */
+main{max-width:1460px;margin:0 auto;padding:18px}
+.view{display:none;animation:viewIn .3s ease}
+.view.active{display:block}
+@keyframes viewIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:16px}
+.card > h2, .card > h3{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;font-weight:700}
+.card .hint{font-size:12.5px;color:var(--text2)}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media(max-width:980px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+/* ============ SIMULATOR ============ */
+.sim-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(330px,1fr);gap:16px;align-items:start}
+@media(max-width:1080px){.sim-grid{grid-template-columns:1fr}}
+.preview-wrap{position:relative;background:#000;border-radius:11px;overflow:hidden;aspect-ratio:16/10;border:1px solid #000;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+#preview{width:100%;height:100%;display:block}
+#flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+#flash.go{animation:flashAnim .38s ease-out}
+@keyframes flashAnim{0%{opacity:.92}100%{opacity:0}}
+.pv-pill{position:absolute;font-family:var(--mono);font-size:11px;letter-spacing:.08em;padding:4px 9px;border-radius:6px;background:rgba(9,11,13,.72);border:1px solid rgba(255,255,255,.14);color:#F5F5F0;pointer-events:none;backdrop-filter:blur(3px)}
+#evOverlay{left:10px;bottom:10px}
+#pvScene{right:10px;top:10px;color:var(--accent);border-color:rgba(217,164,65,.5)}
+#pvStatus{left:10px;top:10px}
+#pvStatus.ok{color:var(--accent2);border-color:rgba(185,215,138,.5)}
+#pvStatus.bad{color:#FF9C93;border-color:rgba(228,115,106,.6)}
+#shakeWarning{right:10px;bottom:10px;color:#FFD79A;border-color:rgba(232,183,90,.65);display:none;align-items:center;gap:6px}
+#shakeWarning.show{display:flex;animation:blink 1.1s infinite}
+@keyframes blink{50%{opacity:.45}}
+.scene-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:13px}
+.chip{background:#272E34;border:1px solid var(--line);color:var(--text2);padding:7px 13px;border-radius:999px;font-size:11.5px;letter-spacing:.08em;cursor:pointer;transition:.18s;text-transform:uppercase}
+.chip:hover{border-color:#4A545C;color:var(--text)}
+.chip.active{background:rgba(217,164,65,.15);border-color:var(--accent);color:var(--accent);font-weight:700}
+.chip .k{font-family:var(--mono);opacity:.75;margin-right:5px}
+.transport{display:flex;gap:10px;align-items:center;margin-top:13px;flex-wrap:wrap}
+#btnTakePhoto{flex:1;min-width:190px;padding:13px 18px;font-size:13.5px;letter-spacing:.16em}
+.lighting-bar{display:flex;gap:10px;align-items:center;margin-top:13px;flex-wrap:wrap}
+.lighting-bar label{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text2)}
+select{background:#171B1F;border:1px solid var(--line);color:var(--text);padding:9px 11px;border-radius:9px;font-size:13px;cursor:pointer;min-width:200px}
+#lightingNote{font-size:12.5px;color:var(--warn);width:100%;min-height:18px}
+
+/* ============ CONTROL PANELS ============ */
+.ctl-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.ctl-value{font-family:var(--mono);font-size:30px;font-weight:700;letter-spacing:.02em;line-height:1.1}
+.ctl-sub{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text2);margin-top:3px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:8px;border-radius:6px;background:#14171A;border:1px solid var(--line);cursor:pointer;margin:12px 0 4px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;background:#F5F5F0;border:4px solid var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#F5F5F0;border:4px solid var(--accent);cursor:pointer}
+input[type=range]::-moz-range-track{background:transparent}
+.scale-marks{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:#78818A;letter-spacing:.04em}
+.ind{margin-top:11px}
+.ind-top{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text2);margin-bottom:5px}
+.ind-top b{color:var(--text);font-weight:600}
+.bar{height:9px;background:#14171A;border:1px solid var(--line);border-radius:6px;overflow:hidden;position:relative}
+.bar > i{display:block;height:100%;background:linear-gradient(90deg,#B07F2A,var(--accent));transition:width .35s ease;border-radius:5px}
+.bar.green > i{background:linear-gradient(90deg,#7FA85C,var(--accent2))}
+.bar.blue > i{background:linear-gradient(90deg,#4C7FA8,var(--info))}
+.bar.red > i{background:linear-gradient(90deg,#A85248,var(--danger))}
+.ctl-cols{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+.viz-box{background:#171B1F;border:1px solid var(--line);border-radius:11px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:6px}
+.viz-box .cap{font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--text2);text-align:center}
+.feedback-inline{font-size:13px;color:#D9DFE4;background:#1A1F23;border-left:3px solid var(--accent);padding:9px 11px;border-radius:0 8px 8px 0;margin-top:13px;min-height:52px}
+.warn-line{display:none;gap:7px;align-items:flex-start;font-size:12.5px;color:#FFD79A;background:rgba(232,183,90,.1);border:1px solid rgba(232,183,90,.4);border-radius:9px;padding:9px 11px;margin-top:12px}
+.warn-line.show{display:flex}
+.toggle{display:flex;align-items:center;gap:10px;margin-top:13px;background:#171B1F;border:1px solid var(--line);border-radius:10px;padding:9px 12px;cursor:pointer;user-select:none}
+.toggle .track{width:42px;height:22px;border-radius:999px;background:#2C343A;position:relative;transition:.2s;flex:none}
+.toggle .track::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;border-radius:50%;background:#8A939B;transition:.2s}
+.toggle.on .track{background:rgba(185,215,138,.3);box-shadow:inset 0 0 0 1px rgba(185,215,138,.5)}
+.toggle.on .track::after{left:23px;background:var(--accent2)}
+.toggle .txt{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase}
+.toggle .txt small{display:block;letter-spacing:0;text-transform:none;color:var(--text2);font-size:11px;margin-top:2px}
+
+/* ============ TRIANGLE / METER / HISTOGRAM ============ */
+.mt-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:760px){.mt-grid{grid-template-columns:1fr}}
+.svg-card{background:#171B1F;border:1px solid var(--line);border-radius:11px;padding:8px;overflow:hidden}
+.svg-card canvas{width:100%;height:auto;display:block}
+#preview{max-width:100%}
+.tri-edge{transition:stroke .3s, stroke-width .3s}
+.tri-dot{transition:transform .45s cubic-bezier(.4,1.5,.5,1);transform-box:fill-box;transform-origin:center}
+.tri-edge.hot{stroke:var(--accent);stroke-width:5;filter:drop-shadow(0 0 6px rgba(217,164,65,.8))}
+#triHot{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);text-align:center;min-height:16px;margin-top:4px}
+.meter-status{text-align:center;font-size:12px;letter-spacing:.16em;text-transform:uppercase;font-weight:800;margin-top:6px}
+.hist-legend{display:flex;justify-content:space-between;font-size:9.5px;letter-spacing:.1em;color:var(--text2);text-transform:uppercase;margin-top:6px}
+.clip-tags{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
+.clip-tag{font-size:10px;letter-spacing:.1em;padding:4px 9px;border-radius:6px;border:1px solid var(--line);color:#6E7780;text-transform:uppercase}
+.clip-tag.on.shadow{border-color:var(--info);color:var(--info);background:rgba(127,183,227,.1)}
+.clip-tag.on.highlight{border-color:var(--danger);color:var(--danger);background:rgba(228,115,106,.1)}
+
+/* ============ FEEDBACK LIST ============ */
+.fb-item{display:flex;gap:11px;align-items:flex-start;padding:10px 12px;background:#1A1F23;border:1px solid var(--line);border-radius:10px;margin-bottom:9px;font-size:13.5px;animation:fbIn .3s ease}
+@keyframes fbIn{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:none}}
+.fb-item .ic{width:26px;height:26px;flex:none;border-radius:7px;display:grid;place-items:center;font-size:12px;font-weight:800;background:rgba(217,164,65,.15);color:var(--accent);font-family:var(--mono)}
+.fb-item.exp .ic{background:rgba(127,183,227,.15);color:var(--info)}
+.fb-item .who{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text2);display:block;margin-bottom:2px}
+
+/* ============ GALLERY ============ */
+.gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(158px,1fr));gap:12px}
+.photo-card{background:#171B1F;border:1px solid var(--line);border-radius:11px;overflow:hidden;transition:.18s}
+.photo-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.photo-card img{width:100%;aspect-ratio:16/10;object-fit:cover;cursor:pointer;background:#000}
+.photo-meta{padding:8px 9px;font-family:var(--mono);font-size:10.5px;color:var(--text2);line-height:1.5}
+.photo-meta b{color:var(--text)}
+.photo-actions{display:flex;gap:5px;padding:0 8px 9px;flex-wrap:wrap}
+.photo-actions button{flex:1;font-size:9.5px;padding:6px 4px;letter-spacing:.06em;border-radius:7px;border:1px solid var(--line);background:#242B31;cursor:pointer;text-transform:uppercase}
+.photo-actions button:hover{border-color:var(--accent);color:var(--accent)}
+.photo-card.selected{border-color:var(--accent2);box-shadow:0 0 0 2px rgba(185,215,138,.3)}
+.empty-note{font-size:13px;color:var(--text2);text-align:center;padding:22px 10px;border:1px dashed var(--line);border-radius:11px}
+.compare-bar{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;font-size:12px;letter-spacing:.1em;color:var(--text2);text-transform:uppercase}
+
+/* ============ STOP SIMULATOR ============ */
+.stop-row{background:#171B1F;border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px}
+.stop-row .sr-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.stop-row .sr-name{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.stop-controls{display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap}
+.stop-btn{width:46px;height:46px;border-radius:12px;border:1px solid var(--line);background:#262D33;font-size:17px;font-weight:800;cursor:pointer;transition:.15s;font-family:var(--mono)}
+.stop-btn:hover{border-color:var(--accent);color:var(--accent)}
+.stop-btn:disabled{opacity:.32;cursor:not-allowed}
+.stop-val{font-family:var(--mono);font-size:26px;font-weight:700;min-width:104px;text-align:center}
+.stop-ladder{display:flex;gap:5px;flex:1;min-width:210px;flex-wrap:wrap}
+.stop-ladder span{flex:1;min-width:44px;text-align:center;font-family:var(--mono);font-size:10.5px;padding:6px 3px;border-radius:7px;background:#22282D;border:1px solid var(--line);color:#79828B;transition:.2s}
+.stop-ladder span.on{background:rgba(217,164,65,.16);border-color:var(--accent);color:var(--accent);font-weight:700}
+.ev-chip{font-family:var(--mono);font-size:12.5px;padding:5px 10px;border-radius:7px;border:1px solid var(--line);background:#22282D;letter-spacing:.05em}
+.ev-chip.pos{border-color:rgba(185,215,138,.5);color:var(--accent2)}
+.ev-chip.neg{border-color:rgba(228,115,106,.5);color:var(--danger)}
+.light-demo{margin-top:13px;background:#121517;border:1px solid var(--line);border-radius:10px;padding:11px}
+.light-demo .ld-label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--text2);display:flex;justify-content:space-between;margin-bottom:7px}
+.ld-track{height:16px;background:#0B0D0F;border-radius:8px;overflow:hidden;position:relative;border:1px solid #262D33}
+.ld-track i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#8A6416,var(--accent));border-radius:8px;transition:width .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 14px rgba(217,164,65,.55)}
+.ld-arrow{font-family:var(--mono);font-size:11.5px;color:var(--accent);margin-top:7px;letter-spacing:.08em;min-height:17px}
+.stop-summary{background:linear-gradient(135deg,rgba(217,164,65,.1),rgba(185,215,138,.07));border:1px solid rgba(217,164,65,.4);border-radius:12px;padding:14px;font-size:13.5px}
+.stop-summary .big{font-family:var(--mono);font-size:24px;font-weight:800;color:var(--accent);display:block;margin-bottom:4px}
+
+/* ============ EQUIVALENT LAB ============ */
+.eq-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+@media(max-width:1180px){.eq-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.eq-grid{grid-template-columns:1fr}}
+.eq-card{background:#171B1F;border:1px solid var(--line);border-radius:13px;overflow:hidden;transition:.2s;display:flex;flex-direction:column}
+.eq-card:hover{border-color:var(--accent);transform:translateY(-3px)}
+.eq-card canvas{width:100%;aspect-ratio:16/10;display:block;background:#000}
+.eq-body{padding:11px 12px 13px;flex:1;display:flex;flex-direction:column;gap:7px}
+.eq-title{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:800}
+.eq-set{font-family:var(--mono);font-size:13.5px;font-weight:700;letter-spacing:.03em}
+.eq-stats{display:grid;grid-template-columns:1fr 1fr;gap:5px 9px;font-size:11px;color:var(--text2)}
+.eq-stats b{color:var(--text);font-family:var(--mono);font-weight:600}
+.eq-stats .row{display:flex;justify-content:space-between;border-bottom:1px dotted #333B41;padding-bottom:3px}
+.eq-card .btn{margin-top:auto;font-size:10.5px;padding:8px}
+.eq-note{font-size:13px;color:var(--text2);font-style:italic;border-left:3px solid var(--accent2);padding-left:11px;margin-top:13px}
+
+/* ============ PRODUCT LAB ============ */
+.prod-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px}
+@media(max-width:980px){.prod-grid{grid-template-columns:1fr}}
+.rec-list{list-style:none;font-size:13.5px}
+.rec-list li{display:flex;gap:10px;padding:9px 0;border-bottom:1px dashed #333B41;align-items:flex-start}
+.rec-list li:last-child{border:none}
+.rec-list .n{width:23px;height:23px;flex:none;border-radius:6px;background:rgba(217,164,65,.16);color:var(--accent);display:grid;place-items:center;font-size:11.5px;font-weight:800;font-family:var(--mono)}
+
+/* ============ CHALLENGES ============ */
+.ch-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(max-width:900px){.ch-grid{grid-template-columns:1fr}}
+.ch-card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;position:relative;overflow:hidden}
+.ch-card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--line)}
+.ch-card.active::before{background:var(--accent);box-shadow:0 0 12px rgba(217,164,65,.7)}
+.ch-card.done::before{background:var(--accent2)}
+.ch-num{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--text2)}
+.ch-title{font-size:16px;font-weight:800;letter-spacing:.06em;margin:3px 0 7px}
+.ch-goal{font-size:13px;color:var(--text2);margin-bottom:10px}
+.ch-targets{list-style:none;font-size:12.5px;margin-bottom:12px}
+.ch-targets li{display:flex;gap:8px;align-items:center;padding:5px 0;color:#C9D0D6}
+.ch-targets .dot{width:8px;height:8px;border-radius:50%;background:#4A545C;flex:none;transition:.3s}
+.ch-targets li.met{color:var(--accent2)}
+.ch-targets li.met .dot{background:var(--accent2);box-shadow:0 0 7px var(--accent2)}
+.ch-actions{display:flex;gap:9px;flex-wrap:wrap}
+.ch-result{margin-top:12px;font-size:13px;border-radius:10px;padding:11px 12px;display:none}
+.ch-result.show{display:block;animation:fbIn .3s ease}
+.ch-result.pass{background:rgba(185,215,138,.1);border:1px solid rgba(185,215,138,.45);color:#DCEFC4}
+.ch-result.fail{background:rgba(228,115,106,.09);border:1px solid rgba(228,115,106,.4);color:#F5C9C5}
+.ch-progress{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-bottom:16px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--text2)}
+.prog-dots{display:flex;gap:7px}
+.prog-dots i{width:26px;height:7px;border-radius:4px;background:#2C343A;transition:.35s}
+.prog-dots i.on{background:var(--accent2);box-shadow:0 0 8px rgba(185,215,138,.6)}
+
+/* ============ LEARN ============ */
+.learn-layout{display:grid;grid-template-columns:266px minmax(0,1fr);gap:16px;align-items:start}
+@media(max-width:940px){.learn-layout{grid-template-columns:1fr}}
+.learn-nav{display:flex;flex-direction:column;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px;max-height:76vh;overflow:auto}
+.learn-nav button{text-align:left;background:transparent;border:1px solid transparent;color:var(--text2);padding:9px 11px;border-radius:9px;font-size:12.5px;cursor:pointer;transition:.15s;display:flex;gap:9px;align-items:center}
+.learn-nav button:hover{background:#262D33;color:var(--text)}
+.learn-nav button.active{background:rgba(217,164,65,.13);border-color:rgba(217,164,65,.5);color:var(--accent);font-weight:700}
+.learn-nav .lk{font-family:var(--mono);font-size:10.5px;opacity:.7}
+.learn-body h3{font-size:21px;letter-spacing:.03em;margin-bottom:4px}
+.learn-body .lkicker{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--accent);margin-bottom:9px}
+.learn-block{margin-top:14px}
+.learn-block h4{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent2);margin-bottom:6px}
+.learn-block p{font-size:14px;color:#D3D9DE}
+.learn-viz{background:#14171A;border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:14px}
+.learn-viz canvas,.learn-viz svg{width:100%;display:block;border-radius:8px}
+.example-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.example-chips span{font-family:var(--mono);font-size:12px;background:#171B1F;border:1px solid var(--line);padding:6px 11px;border-radius:8px;color:var(--accent)}
+.conclusion{background:linear-gradient(135deg,rgba(185,215,138,.1),transparent);border:1px solid rgba(185,215,138,.4);border-radius:12px;padding:13px 15px;margin-top:16px;font-size:14px}
+.conclusion b{color:var(--accent2)}
+
+/* ============ QUIZ ============ */
+.quiz-wrap{max-width:840px;margin:0 auto}
+.quiz-top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:13px;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text2)}
+.quiz-progress{height:8px;background:#14171A;border:1px solid var(--line);border-radius:6px;overflow:hidden;margin-bottom:18px}
+.quiz-progress i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .4s}
+.quiz-q{font-size:19px;font-weight:700;line-height:1.45;margin-bottom:16px}
+.quiz-opts{display:flex;flex-direction:column;gap:10px}
+.quiz-opt{text-align:left;background:#171B1F;border:1px solid var(--line);border-radius:11px;padding:13px 15px;font-size:14.5px;cursor:pointer;transition:.16s;display:flex;gap:12px;align-items:center}
+.quiz-opt:hover:not(:disabled){border-color:var(--accent);transform:translateX(4px)}
+.quiz-opt .key{width:26px;height:26px;flex:none;border-radius:7px;background:#262D33;display:grid;place-items:center;font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text2)}
+.quiz-opt.correct{border-color:var(--accent2);background:rgba(185,215,138,.12)}
+.quiz-opt.correct .key{background:var(--accent2);color:#14210B}
+.quiz-opt.wrong{border-color:var(--danger);background:rgba(228,115,106,.1)}
+.quiz-opt.wrong .key{background:var(--danger);color:#2A0F0C}
+.quiz-expl{background:#171B1F;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:0 11px 11px 0;padding:13px 15px;font-size:14px;margin-top:15px;display:none;animation:fbIn .3s ease}
+.quiz-expl.show{display:block}
+.quiz-expl.good{border-left-color:var(--accent2)}
+.quiz-expl.bad{border-left-color:var(--danger)}
+.quiz-foot{display:flex;justify-content:space-between;gap:11px;margin-top:17px;align-items:center;flex-wrap:wrap}
+.score-ring{width:150px;height:150px;margin:8px auto 14px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--accent) calc(var(--p,0)*1%),#2C343A 0);position:relative}
+.score-ring::after{content:"";position:absolute;inset:11px;background:var(--card);border-radius:50%}
+.score-ring .inner{position:relative;z-index:1;text-align:center}
+.score-ring .num{font-family:var(--mono);font-size:37px;font-weight:800}
+.score-ring .lbl{font-size:10px;letter-spacing:.16em;color:var(--text2);text-transform:uppercase}
+.review-list{list-style:none;font-size:13.5px}
+.review-list li{padding:8px 0;border-bottom:1px dashed #333B41;display:flex;gap:9px}
+.review-list .ok{color:var(--accent2)}
+.review-list .no{color:var(--danger)}
+
+/* ============ MODAL ============ */
+.modal{position:fixed;inset:0;background:rgba(6,8,10,.78);display:none;align-items:center;justify-content:center;padding:16px;z-index:200;backdrop-filter:blur(4px)}
+.modal.open{display:flex}
+.modal-box{background:var(--card);border:1px solid var(--line);border-radius:16px;width:100%;max-width:820px;max-height:90vh;overflow:auto;padding:20px;animation:viewIn .25s ease}
+.modal-box h3{font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px}
+.x-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--line);background:#262D33;cursor:pointer;font-size:16px;flex:none}
+.x-btn:hover{border-color:var(--danger);color:var(--danger)}
+.help-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px}
+@media(max-width:640px){.help-grid{grid-template-columns:1fr}}
+.help-item{background:#171B1F;border:1px solid var(--line);border-radius:11px;padding:12px;font-size:13.5px}
+.help-item b{display:block;color:var(--accent2);margin-bottom:4px;font-size:11.5px;letter-spacing:.12em;text-transform:uppercase}
+.viewer-img{width:100%;border-radius:11px;background:#000;border:1px solid var(--line)}
+.meta-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:13px}
+.meta-table th,.meta-table td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left}
+.meta-table th{color:var(--text2);font-size:10.5px;letter-spacing:.13em;text-transform:uppercase;width:38%}
+.meta-table td{font-family:var(--mono)}
+.cmp-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:640px){.cmp-grid{grid-template-columns:1fr}}
+.diff{color:var(--accent);font-weight:700}
+
+/* ============ FOOTER ============ */
+footer{max-width:1460px;margin:8px auto 26px;padding:16px 18px;border-top:1px solid var(--line);text-align:center;font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:#6E7780}
+footer b{color:var(--accent);letter-spacing:.2em}
+
+/* ============ RESPONSIVE ============ */
+@media(max-width:720px){
+  main{padding:12px}
+  .app-header{padding:10px 12px;gap:10px}
+  .brand h1{font-size:13.5px;letter-spacing:.1em}
+  .brand-logo{width:34px;height:34px}
+  .header-actions{width:100%;margin-left:0;justify-content:flex-start}
+  .ctl-value{font-size:25px}
+  .stop-val{font-size:21px;min-width:84px}
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .card{padding:13px;border-radius:12px}
+  .quiz-q{font-size:16.5px}
+  .btn{padding:10px 13px}
+  .ctl-cols{grid-template-columns:1fr}
+  .learn-nav{max-height:none;flex-direction:row;overflow-x:auto}
+  .learn-nav button{white-space:nowrap}
+}
+@media(max-width:480px){
+  .main-nav{padding-left:10px;padding-right:10px;gap:5px}
+  .nav-btn{padding:9px 12px;font-size:11px;letter-spacing:.08em}
+  .lighting-bar select{width:100%;min-width:0}
+  .stop-controls{gap:8px}
+  .stop-btn{width:44px;height:44px}
+  .pv-pill{font-size:9px;padding:4px 6px}
+  .compare-bar .btn{flex:1}
+}
+input[type=range]{touch-action:pan-y;min-height:24px}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo" aria-hidden="true">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D9A441" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 8.5A2.5 2.5 0 0 1 5.5 6h1.7c.5 0 1-.25 1.3-.66l.8-1.1A1.5 1.5 0 0 1 10.9 3.5h2.2c.55 0 1.06.28 1.35.74l.8 1.1c.3.41.8.66 1.3.66h1.7A2.5 2.5 0 0 1 20.5 8.5v8A2.5 2.5 0 0 1 18 19H5.5A2.5 2.5 0 0 1 3 16.5z"/>
+          <circle cx="11.7" cy="12.3" r="3.6"/>
+          <circle cx="11.7" cy="12.3" r="1.5" fill="#D9A441" stroke="none"/>
+          <path d="M17.6 9.4h.9"/>
+        </svg>
+      </div>
+      <div>
+        <h1>DIGITAL EXPOSURE LAB</h1>
+        <div class="sub">Interactive Photography Learning</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="badge live">Manual Mode</span>
+      <button class="btn btn-ghost" id="btnHelp" aria-label="Buka bantuan penggunaan aplikasi">? Help</button>
+      <button class="btn btn-ghost" id="btnReset" aria-label="Reset semua pengaturan kamera ke awal">↺ Reset</button>
+    </div>
+  </header>
+  <nav class="main-nav" role="tablist" aria-label="Navigasi utama">
+    <button class="nav-btn active" data-view="simulator" role="tab" aria-selected="true">Simulator</button>
+    <button class="nav-btn" data-view="learn" role="tab" aria-selected="false">Learn</button>
+    <button class="nav-btn" data-view="experiment" role="tab" aria-selected="false">Experiment</button>
+    <button class="nav-btn" data-view="challenge" role="tab" aria-selected="false">Challenge</button>
+    <button class="nav-btn" data-view="quiz" role="tab" aria-selected="false">Quiz</button>
+  </nav>
+</div>
+
+<main>
+<!-- ================= SIMULATOR ================= -->
+<section id="view-simulator" class="view active" role="tabpanel">
+  <div class="sim-grid">
+    <div>
+      <!-- PREVIEW -->
+      <div class="card">
+        <h2>Live View — Camera Simulator</h2>
+        <div class="preview-wrap">
+          <canvas id="preview" width="720" height="450" aria-label="Pratinjau langsung hasil simulasi kamera"></canvas>
+          <div id="flash"></div>
+          <div class="pv-pill" id="pvStatus">WELL EXPOSED</div>
+          <div class="pv-pill" id="pvScene">SCENE A — PORTRAIT</div>
+          <div class="pv-pill mono" id="evOverlay">0.0 EV</div>
+          <div class="pv-pill" id="shakeWarning">⚠ CAMERA SHAKE</div>
+        </div>
+        <div class="scene-row" id="sceneRow" role="group" aria-label="Pilih scene pemotretan"></div>
+        <div class="lighting-bar">
+          <label for="lightingSelect">Lighting Condition</label>
+          <select id="lightingSelect" aria-label="Pilih kondisi cahaya lingkungan"></select>
+          <div id="lightingNote" role="status"></div>
+        </div>
+        <div class="transport">
+          <button class="btn btn-primary" id="btnTakePhoto" aria-label="Ambil foto dari pratinjau kamera">◉ Take Photo</button>
+          <span class="badge" id="shotCounter">0 photos</span>
+        </div>
+      </div>
+
+      <!-- TRIANGLE + METER -->
+      <div class="mt-grid">
+        <div class="card">
+          <h2>Exposure Triangle</h2>
+          <div class="svg-card">
+            <svg id="triSvg" viewBox="0 0 330 268" role="img" aria-label="Visualisasi segitiga exposure: aperture, shutter speed, ISO">
+              <defs>
+                <linearGradient id="triFill" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#D9A441" stop-opacity=".16"/>
+                  <stop offset="100%" stop-color="#B9D78A" stop-opacity=".08"/>
+                </linearGradient>
+              </defs>
+              <polygon points="165,26 28,236 302,236" fill="url(#triFill)" stroke="#3B444B" stroke-width="2"/>
+              <path id="triEdgeA" class="tri-edge" d="M28,236 L165,26" stroke="#5C666E" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <path id="triEdgeS" class="tri-edge" d="M165,26 L302,236" stroke="#5C666E" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <path id="triEdgeI" class="tri-edge" d="M28,236 L302,236" stroke="#5C666E" stroke-width="3" fill="none" stroke-linecap="round"/>
+              <circle id="triDotA" class="tri-dot" r="8" cx="96" cy="131" fill="#D9A441" stroke="#101214" stroke-width="2"/>
+              <circle id="triDotS" class="tri-dot" r="8" cx="233" cy="131" fill="#B9D78A" stroke="#101214" stroke-width="2"/>
+              <circle id="triDotI" class="tri-dot" r="8" cx="165" cy="236" fill="#7FB7E3" stroke="#101214" stroke-width="2"/>
+              <text x="96" y="14" fill="#A5ADB5" font-size="11" text-anchor="middle" letter-spacing="1.6">APERTURE</text>
+              <text x="52" y="212" fill="#8A939B" font-size="9" text-anchor="middle">WIDE</text>
+              <text x="138" y="64" fill="#8A939B" font-size="9" text-anchor="end">NARROW</text>
+              <text x="240" y="14" fill="#A5ADB5" font-size="11" text-anchor="middle" letter-spacing="1.6">SHUTTER</text>
+              <text x="196" y="64" fill="#8A939B" font-size="9" text-anchor="start">FAST</text>
+              <text x="284" y="212" fill="#8A939B" font-size="9" text-anchor="middle">SLOW</text>
+              <text x="300" y="258" fill="#8A939B" font-size="9" text-anchor="end">ISO HIGH</text>
+              <text x="30" y="258" fill="#8A939B" font-size="9">ISO LOW</text>
+              <text x="165" y="140" fill="#F5F5F0" font-size="12" text-anchor="middle" letter-spacing="3">EXPOSURE</text>
+              <text id="triEV" x="165" y="163" fill="#D9A441" font-size="19" font-weight="700" text-anchor="middle" font-family="monospace">0.0 EV</text>
+            </svg>
+          </div>
+          <div id="triHot"></div>
+        </div>
+
+        <div class="card">
+          <h2>Exposure Meter</h2>
+          <div class="svg-card">
+            <svg id="meterSvg" viewBox="0 0 340 138" role="img" aria-label="Exposure meter dari -3 sampai +3 EV">
+              <rect x="20" y="46" width="46" height="26" fill="#20303E" rx="3"/>
+              <rect x="66" y="46" width="46" height="26" fill="#2C3B49" rx="3"/>
+              <rect x="112" y="46" width="56" height="26" fill="#3A4A33" rx="3"/>
+              <rect x="168" y="46" width="56" height="26" fill="#3A4A33" rx="3"/>
+              <rect x="224" y="46" width="46" height="26" fill="#4A3A26" rx="3"/>
+              <rect x="270" y="46" width="46" height="26" fill="#4A2E2A" rx="3"/>
+              <line x1="20" y1="72" x2="316" y2="72" stroke="#78818A" stroke-width="2"/>
+              <g id="meterTicks" font-family="monospace" font-size="12" fill="#A5ADB5" text-anchor="middle"></g>
+              <g id="meterLabels" font-family="monospace" font-size="10" fill="#6E7780" text-anchor="middle"></g>
+              <g id="meterNeedle" transform="translate(168,0)">
+                <line x1="0" y1="38" x2="0" y2="80" stroke="#F5F5F0" stroke-width="3"/>
+                <polygon points="-7,38 7,38 0,26" fill="#F5F5F0"/>
+              </g>
+              <text id="meterEV" x="170" y="112" fill="#D9A441" font-size="21" font-weight="700" text-anchor="middle" font-family="monospace">0.00 EV</text>
+              <text id="meterScaleTxt" x="170" y="130" fill="#6E7780" font-size="9.5" text-anchor="middle" letter-spacing="1.4">−3 UNDEREXPOSED · 0 BALANCED · +3 OVEREXPOSED</text>
+            </svg>
+          </div>
+          <div class="meter-status" id="meterStatus">WELL EXPOSED</div>
+          <p class="hint" id="meterHint" style="margin-top:8px;text-align:center"></p>
+        </div>
+      </div>
+
+      <!-- HISTOGRAM -->
+      <div class="card">
+        <h2>Histogram — Sampled From Preview Pixels</h2>
+        <div class="svg-card">
+          <canvas id="histogram" width="640" height="170" aria-label="Histogram luminance hasil sampling pixel pratinjau"></canvas>
+        </div>
+        <div class="hist-legend"><span>Shadows</span><span>Midtones</span><span>Highlights</span></div>
+        <div class="clip-tags">
+          <span class="clip-tag shadow" id="clipShadow">Shadow clipping</span>
+          <span class="clip-tag highlight" id="clipHighlight">Highlight clipping</span>
+          <span class="clip-tag" id="histSummary">Distribution: —</span>
+        </div>
+      </div>
+
+      <!-- FEEDBACK -->
+      <div class="card">
+        <h2>Learning Feedback</h2>
+        <div id="feedbackList" aria-live="polite"></div>
+      </div>
+
+      <!-- GALLERY -->
+      <div class="card">
+        <h2>Photo Gallery</h2>
+        <div class="compare-bar">
+          <span id="compareCount">0 / 2 selected for compare</span>
+          <button class="btn btn-green" id="btnCompare" disabled>⇄ Compare</button>
+          <button class="btn btn-ghost" id="btnClearCompare" disabled>Clear</button>
+        </div>
+        <div id="galleryGrid" class="gallery-grid"></div>
+        <div id="galleryEmpty" class="empty-note">Belum ada foto. Tekan <b class="accent">TAKE PHOTO</b> untuk menyimpan hasil beserta metadata pengaturannya.</div>
+      </div>
+    </div>
+
+    <!-- CONTROL PANELS -->
+    <div>
+      <!-- APERTURE -->
+      <div class="card">
+        <h2>Aperture — Diafragma</h2>
+        <div class="ctl-head">
+          <div>
+            <div class="ctl-value" id="apValue">f/8</div>
+            <div class="ctl-sub">F-Stop · Light Intake · Depth of Field</div>
+          </div>
+        </div>
+        <label class="sr-only" for="apSlider">Pilih nilai aperture (f-stop)</label>
+        <input type="range" id="apSlider" min="0" max="8" step="1" value="5" aria-describedby="apValue">
+        <div class="scale-marks"><span>f/1.4</span><span>f/4</span><span>f/8</span><span>f/16</span><span>f/22</span></div>
+        <div class="ctl-cols">
+          <div class="ind">
+            <div class="ind-top"><span>Light Intake</span><b id="apLightTxt">44%</b></div>
+            <div class="bar"><i id="apLightBar" style="width:44%"></i></div>
+          </div>
+          <div class="ind">
+            <div class="ind-top"><span>Depth of Field</span><b id="apDofTxt">Deep</b></div>
+            <div class="bar green"><i id="apDofBar" style="width:70%"></i></div>
+          </div>
+        </div>
+        <div class="ctl-cols">
+          <div class="viz-box">
+            <svg id="apertureSvg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Diagram mekanisme diafragma lensa"></svg>
+            <div class="cap">Diaphragm Blades</div>
+          </div>
+          <div class="viz-box" style="justify-content:center">
+            <div class="cap" style="letter-spacing:.16em">Bokeh / Blur Preview</div>
+            <canvas id="apBokeh" width="150" height="112" style="border-radius:8px;background:#111"></canvas>
+            <div class="cap" id="apBokehCap">Background blur</div>
+          </div>
+        </div>
+        <div class="feedback-inline" id="apFeedback">f/8 — Bukaan diafragma sedang. Cahaya masuk seimbang dan area ketajaman cukup luas.</div>
+      </div>
+
+      <!-- SHUTTER -->
+      <div class="card">
+        <h2>Shutter Speed — Rana</h2>
+        <div class="ctl-head">
+          <div>
+            <div class="ctl-value" id="shValue">1/125</div>
+            <div class="ctl-sub">Exposure Duration · Motion Blur</div>
+          </div>
+        </div>
+        <label class="sr-only" for="shSlider">Pilih kecepatan rana (shutter speed)</label>
+        <input type="range" id="shSlider" min="0" max="15" step="1" value="5" aria-describedby="shValue">
+        <div class="scale-marks"><span>1/4000</span><span>1/500</span><span>1/125</span><span>1/4</span><span>8"</span></div>
+        <div class="ctl-cols">
+          <div class="ind">
+            <div class="ind-top"><span>Exposure Duration</span><b id="shDurTxt">8 ms</b></div>
+            <div class="bar blue"><i id="shDurBar" style="width:35%"></i></div>
+          </div>
+          <div class="ind">
+            <div class="ind-top"><span>Motion Blur</span><b id="shBlurTxt">Low</b></div>
+            <div class="bar red"><i id="shBlurBar" style="width:25%"></i></div>
+          </div>
+        </div>
+        <div class="ctl-cols">
+          <div class="viz-box">
+            <svg id="shutterSvg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="Animasi mekanisme rana kamera"></svg>
+            <div class="cap">Shutter Curtain</div>
+          </div>
+          <div class="viz-box" style="justify-content:center">
+            <div class="cap" style="letter-spacing:.16em">Motion Trail Demo</div>
+            <canvas id="shMotion" width="150" height="112" style="border-radius:8px;background:#111"></canvas>
+            <div class="cap" id="shMotionCap">Object freeze</div>
+          </div>
+        </div>
+        <div class="toggle on" id="tripodToggle" role="switch" aria-checked="false" tabindex="0" aria-label="Mode tripod kamera">
+          <span class="track"></span>
+          <span class="txt">Handheld<small id="tripodSub">Kamera dipegang tangan — waspada camera shake</small></span>
+        </div>
+        <div class="warn-line" id="shakeMsg"><span>⚠</span><span id="shakeTxt">Shutter terlalu lambat untuk handheld 50mm. Gunakan tripod atau percepat rana.</span></div>
+        <div class="feedback-inline" id="shFeedback">1/125 detik — Durasi standar. Gerakan normal relatif tajam dan aman dari camera shake.</div>
+      </div>
+
+      <!-- ISO -->
+      <div class="card">
+        <h2>ISO — Sensor Gain</h2>
+        <div class="ctl-head">
+          <div>
+            <div class="ctl-value" id="isoValue">ISO 100</div>
+            <div class="ctl-sub">Signal Gain · Digital Noise · Detail</div>
+          </div>
+        </div>
+        <label class="sr-only" for="isoSlider">Pilih nilai ISO</label>
+        <input type="range" id="isoSlider" min="0" max="7" step="1" value="0" aria-describedby="isoValue">
+        <div class="scale-marks"><span>100</span><span>400</span><span>1600</span><span>6400</span><span>12800</span></div>
+        <div class="ctl-cols">
+          <div class="ind">
+            <div class="ind-top"><span>ISO Gain</span><b id="isoGainTxt">1×</b></div>
+            <div class="bar"><i id="isoGainBar" style="width:0%"></i></div>
+          </div>
+          <div class="ind">
+            <div class="ind-top"><span>Digital Noise</span><b id="isoNoiseTxt">None</b></div>
+            <div class="bar red"><i id="isoNoiseBar" style="width:0%"></i></div>
+          </div>
+        </div>
+        <div class="ind">
+          <div class="ind-top"><span>Detail Image Quality</span><b id="isoDetailTxt">Excellent — 100%</b></div>
+          <div class="bar green"><i id="isoDetailBar" style="width:100%"></i></div>
+        </div>
+        <div class="ctl-cols">
+          <div class="viz-box">
+            <div class="cap" style="letter-spacing:.16em">Noise Sample (100% crop)</div>
+            <canvas id="isoNoiseViz" width="150" height="112" style="border-radius:8px;background:#111"></canvas>
+            <div class="cap" id="isoNoiseCap">Sensor bersih</div>
+          </div>
+          <div class="viz-box" style="justify-content:center">
+            <div class="cap" style="letter-spacing:.16em">Gain Curve</div>
+            <canvas id="isoGainViz" width="150" height="112" style="border-radius:8px;background:#111"></canvas>
+            <div class="cap">Penguatan sinyal logaritmik</div>
+          </div>
+        </div>
+        <div class="feedback-inline" id="isoFeedback">ISO 100 — Penguatan sinyal rendah. Gambar bersih dengan detail maksimal.</div>
+        <p class="hint" style="margin-top:10px">ISO bukan jumlah cahaya fisik yang masuk lewat lensa. ISO hanya <b>memperkuat sinyal</b> yang sudah diterima sensor — sehingga foto terlihat lebih terang, namun noise juga ikut terangkat.</p>
+      </div>
+    </div>
+  </div>
+</section>
+<!-- ================= EXPERIMENT ================= -->
+<section id="view-experiment" class="view" role="tabpanel">
+  <!-- STOP SIMULATOR -->
+  <div class="card">
+    <h2>Understanding Exposure Stops</h2>
+    <p class="hint" style="margin-bottom:14px"><b class="accent">1 Stop = Double or Half the Light.</b> Tekan <b>+1 STOP</b> atau <b>−1 STOP</b> pada tiap parameter untuk melihat perpindahan nilai, perubahan cahaya (×2 / ÷2), dan konsekuensinya terhadap exposure. Kontrol ini mengubah pengaturan kamera sungguhan pada Simulator.</p>
+    <div class="stop-row">
+      <div class="sr-head"><span class="sr-name">Aperture Stop</span><span class="ev-chip" id="apStopEv">0 EV</span></div>
+      <div class="stop-controls">
+        <button class="stop-btn" id="apStopMinus" aria-label="Aperture kurang satu stop">−</button>
+        <span class="stop-val" id="apStopVal">f/8</span>
+        <button class="stop-btn" id="apStopPlus" aria-label="Aperture tambah satu stop">+</button>
+        <div class="stop-ladder" id="apLadder"></div>
+      </div>
+      <div class="light-demo">
+        <div class="ld-label"><span>Cahaya Masuk</span><span id="apLdRatio">1.00×</span></div>
+        <div class="ld-track"><i id="apLdBar" style="width:25%"></i></div>
+        <div class="ld-arrow" id="apLdArrow"></div>
+      </div>
+    </div>
+
+    <div class="stop-row">
+      <div class="sr-head"><span class="sr-name">Shutter Stop</span><span class="ev-chip" id="shStopEv">0 EV</span></div>
+      <div class="stop-controls">
+        <button class="stop-btn" id="shStopMinus" aria-label="Shutter kurang satu stop">−</button>
+        <span class="stop-val" id="shStopVal">1/125</span>
+        <button class="stop-btn" id="shStopPlus" aria-label="Shutter tambah satu stop">+</button>
+        <div class="stop-ladder" id="shLadder"></div>
+      </div>
+      <div class="light-demo">
+        <div class="ld-label"><span>Durasi Cahaya</span><span id="shLdRatio">1.00×</span></div>
+        <div class="ld-track"><i id="shLdBar" style="width:25%"></i></div>
+        <div class="ld-arrow" id="shLdArrow"></div>
+      </div>
+    </div>
+
+    <div class="stop-row">
+      <div class="sr-head"><span class="sr-name">ISO Stop</span><span class="ev-chip" id="isoStopEv">0 EV</span></div>
+      <div class="stop-controls">
+        <button class="stop-btn" id="isoStopMinus" aria-label="ISO kurang satu stop">−</button>
+        <span class="stop-val" id="isoStopVal">100</span>
+        <button class="stop-btn" id="isoStopPlus" aria-label="ISO tambah satu stop">+</button>
+        <div class="stop-ladder" id="isoLadder"></div>
+      </div>
+      <div class="light-demo">
+        <div class="ld-label"><span>Penguatan Sinyal</span><span id="isoLdRatio">1.00×</span></div>
+        <div class="ld-track"><i id="isoLdBar" style="width:16.6%"></i></div>
+        <div class="ld-arrow" id="isoLdArrow"></div>
+      </div>
+    </div>
+
+    <div class="stop-summary">
+      <span class="big" id="stopTotalEv">0.00 EV</span>
+      <span id="stopSummaryTxt">Ketiga parameter berada di nilai referensi: f/8 · 1/125 · ISO 100.</span>
+      <div style="display:flex;gap:9px;margin-top:11px;flex-wrap:wrap">
+        <button class="btn btn-green" id="btnCompensate">⇄ Auto Compensate</button>
+        <span class="hint" id="compensateHint" style="align-self:center"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- EQUIVALENT EXPOSURE LAB -->
+  <div class="card">
+    <h2>Equivalent Exposure Lab</h2>
+    <p class="hint" style="margin-bottom:13px">Empat kombinasi di bawah dihitung dari <b>rumus kesetaraan exposure</b>, bukan dipilih acak — semuanya menghasilkan kecerahan yang setara, tetapi karakter foto berbeda.</p>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">
+      <button class="btn btn-primary" id="btnGenerateEq">⟳ Generate Equivalent Settings</button>
+      <span class="hint" id="eqBasis" style="align-self:center"></span>
+    </div>
+    <div class="eq-grid" id="eqGrid"></div>
+    <p class="eq-note">“Same exposure does not always mean the same photograph.” — Kecerahan sama, tetapi depth of field, motion blur, dan noise berbeda.</p>
+  </div>
+
+  <!-- PRODUCT LAB -->
+  <div class="card">
+    <h2>Studio Product Photography</h2>
+    <div class="prod-grid">
+      <div>
+        <ul class="rec-list">
+          <li><span class="n">1</span><span><b>ISO rendah (100–200)</b> untuk meminimalkan digital noise dan menjaga detail produk tetap bersih.</span></li>
+          <li><span class="n">2</span><span><b>Aperture f/8–f/11</b> agar seluruh permukaan produk — dari label sampai tutup — berada dalam area ketajaman (depth of field dalam).</span></li>
+          <li><span class="n">3</span><span><b>Shutter speed menjadi variabel fleksibel</b>. Selama kamera di tripod dan produk diam, rana lambat tidak masalah: cahaya studio tetap stabil.</span></li>
+          <li><span class="n">4</span><span><b>Perhatikan highlight &amp; bayangan.</b> Soft light memberi bayangan lembut dan highlight halus pada permukaan botol.</span></li>
+        </ul>
+        <div class="feedback-inline" style="margin-top:14px">White Balance mengatur akurasi warna, RAW mempertahankan lebih banyak informasi untuk editing. <b class="accent2">Keduanya bukan pengganti pengaturan exposure triangle.</b></div>
+        <div style="display:flex;gap:10px;margin-top:13px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="btnBestProduct">★ Best Product Settings</button>
+          <span class="hint" id="bestProductNote" style="align-self:center"></span>
+        </div>
+      </div>
+      <div>
+        <div class="viz-box" style="gap:10px">
+          <div class="cap" style="letter-spacing:.16em">Studio Setup Diagram</div>
+          <svg viewBox="0 0 300 210" width="100%" role="img" aria-label="Diagram studio fotografi produk dengan soft light">
+            <rect x="0" y="0" width="300" height="210" fill="#1B1F23" rx="8"/>
+            <rect x="14" y="14" width="272" height="130" fill="#3A4148" rx="6"/>
+            <rect x="14" y="144" width="272" height="52" fill="#2B3138" rx="6"/>
+            <ellipse cx="150" cy="176" rx="52" ry="11" fill="#0E1113" opacity=".75"/>
+            <rect x="132" y="86" width="36" height="82" rx="9" fill="#4E7FA8"/>
+            <rect x="132" y="86" width="13" height="82" rx="7" fill="#7FB7E3" opacity=".55"/>
+            <rect x="141" y="74" width="18" height="14" rx="3" fill="#D9A441"/>
+            <rect x="137" y="112" width="26" height="30" rx="3" fill="#EDEDE6"/>
+            <rect x="141" y="119" width="18" height="4" fill="#4E7FA8"/>
+            <rect x="141" y="127" width="14" height="3" fill="#8A939B"/>
+            <g stroke="#F3E7C4" stroke-width="2" opacity=".7">
+              <line x1="44" y1="44" x2="98" y2="88"/><line x1="58" y1="36" x2="106" y2="80"/><line x1="34" y1="60" x2="92" y2="96"/>
+            </g>
+            <rect x="16" y="24" width="66" height="34" fill="#F3E7C4" opacity=".28" rx="4"/>
+            <text x="49" y="72" fill="#A5ADB5" font-size="9" text-anchor="middle">SOFTBOX</text>
+            <g stroke="#8A939B" stroke-width="2" opacity=".55">
+              <line x1="252" y1="52" x2="214" y2="92"/><line x1="256" y1="66" x2="220" y2="100"/>
+            </g>
+            <text x="252" y="42" fill="#A5ADB5" font-size="9" text-anchor="middle">REFLECTOR</text>
+            <text x="150" y="203" fill="#6E7780" font-size="9.5" text-anchor="middle" letter-spacing="1.4">ISO 100 · f/8 · TRIPOD</text>
+          </svg>
+          <div class="cap">Produk diam · kamera diam · cahaya stabil</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CHALLENGE ================= -->
+<section id="view-challenge" class="view" role="tabpanel">
+  <div class="card">
+    <h2>Challenge Mode</h2>
+    <div class="ch-progress">
+      <span>Progress</span>
+      <div class="prog-dots" id="progDots"><i></i><i></i><i></i><i></i></div>
+      <span id="progText">0 / 4 completed</span>
+    </div>
+    <p class="hint" style="margin-bottom:14px">Tekan <b class="accent">START</b> untuk memuat scene, cahaya, dan target pengaturan yang diperlukan. Sesuaikan exposure pada Simulator, lalu tekan <b class="accent">TAKE PHOTO</b> — sistem memeriksa pengaturanmu secara otomatis.</p>
+    <div class="ch-grid" id="chGrid"></div>
+    <div class="ch-result" id="chResult" role="status"></div>
+  </div>
+</section>
+
+<!-- ================= LEARN ================= -->
+<section id="view-learn" class="view" role="tabpanel">
+  <div class="learn-layout">
+    <nav class="learn-nav" id="learnNav" aria-label="Daftar materi pembelajaran"></nav>
+    <div class="card learn-body" id="learnBody" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- ================= QUIZ ================= -->
+<section id="view-quiz" class="view" role="tabpanel">
+  <div class="quiz-wrap">
+    <div class="card">
+      <h2>Mini Quiz — Exposure Triangle</h2>
+      <div id="quizStage"></div>
+    </div>
+  </div>
+</section>
+<!-- ================= MODALS ================= -->
+<div class="modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="helpTitle">Cara Menggunakan Digital Exposure Lab</h3>
+      <button class="x-btn" data-close="helpModal" aria-label="Tutup bantuan">✕</button>
+    </div>
+    <div class="help-grid">
+      <div class="help-item"><b>1 · Learn</b>Baca 12 materi inti: exposure, aperture, shutter, ISO, stop, dan equivalent exposure — lengkap dengan visualisasi.</div>
+      <div class="help-item"><b>2 · Simulator</b>Ubah aperture, shutter, dan ISO. Pratinjau, meter, histogram, dan feedback diperbarui dari satu sumber perhitungan yang sama.</div>
+      <div class="help-item"><b>3 · Experiment</b>Coba pemindahan ±1 stop, bandingkan 4 kombinasi equivalent exposure, dan praktikkan mode Studio Product Photography.</div>
+      <div class="help-item"><b>4 · Challenge</b>Selesaikan 4 tantangan: Bokeh Master, Freeze the Moment, Deep Focus, dan Product Photography. Sistem memeriksa otomatis.</div>
+      <div class="help-item"><b>5 · Quiz</b>12 soal pilihan ganda dengan pembahasan. Skor dan materi yang perlu dipelajari lagi ditampilkan di akhir.</div>
+      <div class="help-item"><b>Kiwi? Tips</b>Gunakan <b>TRIPOD</b> saat shutter lambat, naikkan <b>ISO</b> saat gelap, dan buka <b>aperture</b> saat ingin background blur.</div>
+    </div>
+    <p class="hint" style="margin-top:14px">Semua visual dibuat prosedural dengan Canvas &amp; SVG — aplikasi berjalan sepenuhnya offline tanpa library eksternal.</p>
+  </div>
+</div>
+
+<div class="modal" id="photoModal" role="dialog" aria-modal="true" aria-labelledby="photoTitle">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="photoTitle">Detail Foto</h3>
+      <button class="x-btn" data-close="photoModal" aria-label="Tutup detail foto">✕</button>
+    </div>
+    <img class="viewer-img" id="photoViewer" alt="Hasil foto yang diambil">
+    <table class="meta-table" id="photoMeta"></table>
+    <div style="display:flex;gap:9px;margin-top:14px;flex-wrap:wrap">
+      <a class="btn btn-primary" id="photoDownload" download="digital-exposure-lab.png">⤓ Download PNG</a>
+      <button class="btn btn-danger" id="photoDelete">🗑 Delete</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="compareModal" role="dialog" aria-modal="true" aria-labelledby="cmpTitle">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3 id="cmpTitle">Compare Two Photos</h3>
+      <button class="x-btn" data-close="compareModal" aria-label="Tutup perbandingan">✕</button>
+    </div>
+    <div class="cmp-grid" id="cmpGrid"></div>
+    <div id="cmpDiff"></div>
+  </div>
+</div>
+
+<footer>Digital Exposure Lab — <b>Understand Light. Control Exposure. Create Your Image.</b></footer>
+
+<script>
+'use strict';
+/* =====================================================================
+   1. KONSTANTA, STATE & MATEMATIKA EXPOSURE
+   ===================================================================== */
+const APERTURES = [1.4, 2, 2.8, 4, 5.6, 8, 11, 16, 22];
+const SHUTTERS = [
+  { v: 1/4000, l: '1/4000' }, { v: 1/2000, l: '1/2000' }, { v: 1/1000, l: '1/1000' }, { v: 1/500, l: '1/500' },
+  { v: 1/250, l: '1/250' },   { v: 1/125, l: '1/125' },   { v: 1/60, l: '1/60' },     { v: 1/30, l: '1/30' },
+  { v: 1/15, l: '1/15' },     { v: 1/8, l: '1/8' },       { v: 1/4, l: '1/4' },       { v: 1/2, l: '1/2' },
+  { v: 1, l: '1"' },          { v: 2, l: '2"' },          { v: 4, l: '4"' },          { v: 8, l: '8"' }
+];
+const ISOS = [100, 200, 400, 800, 1600, 3200, 6400, 12800];
+const SCENES = [
+  { id: 'A', name: 'PORTRAIT',   desc: 'Bokeh & depth of field',   dof: 1.00 },
+  { id: 'B', name: 'ACTION',     desc: 'Gerakan & motion blur',    dof: 0.55 },
+  { id: 'C', name: 'LANDSCAPE',  desc: 'Kedalaman bidang tajam',   dof: 0.30 },
+  { id: 'D', name: 'NIGHT',      desc: 'Cahaya minim & light trail', dof: 0.70 },
+  { id: 'E', name: 'PRODUCT',    desc: 'Studio & soft light',      dof: 0.25 }
+];
+const LIGHTINGS = [
+  { id: 'sun',    name: 'BRIGHT SUNLIGHT', ev:  3, note: 'Cahaya matahari langsung — sangat terang.' },
+  { id: 'cloudy', name: 'CLOUDY DAY',      ev:  1, note: 'Cahaya tersebar oleh awan — sedikit lebih redup.' },
+  { id: 'shade',  name: 'OPEN SHADE',      ev:  0, note: 'Nilai referensi: f/8 · 1/125 · ISO 100 = 0 EV.' },
+  { id: 'indoor', name: 'INDOOR LIGHTING', ev: -3, note: 'Cahaya lampu ruangan — jauh lebih gelap.' },
+  { id: 'night',  name: 'NIGHT SCENE',     ev: -6, note: 'Malam hari — membutuhkan ISO tinggi atau rana lambat.' },
+  { id: 'studio', name: 'STUDIO LIGHTING', ev: -1, note: 'Lampu studio terkontrol — sedikit di bawah referensi.' }
+];
+const REF = { ap: 8, sh: 1/125, iso: 100 };
+
+/* ---- state utama ---- */
+const state = {
+  apertureValue: 8,
+  shutterValue: 1/125,
+  isoValue: 100,
+  exposureDeviation: 0,
+  sceneType: 'A',
+  lightingCondition: 'shade',
+  tripodMode: false,
+  capturedPhotos: [],
+  activeChallenge: null,
+  completedChallenges: new Set(),
+  quizState: { index: 0, score: 0, answered: false, wrong: [], done: false, picked: -1 },
+  feedback: [],
+  compareSel: [],
+  lastChanged: null,
+  shake: false,
+  view: 'simulator'
+};
+
+/* ---- util ---- */
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const apIndex = (v) => APERTURES.indexOf(v);
+const shIndex = (v) => SHUTTERS.findIndex(s => Math.abs(s.v - v) < 1e-9);
+const isoIndex = (v) => ISOS.indexOf(v);
+const fLabel = (v) => 'f/' + (Number.isInteger(v) ? v : String(v));
+const shLabel = (v) => (SHUTTERS[shIndex(v)] || { l: v + 's' }).l;
+const lightIdx = (id) => Math.max(0, LIGHTINGS.findIndex(l => l.id === id));
+const sceneIdx = (id) => Math.max(0, SCENES.findIndex(s => s.id === id));
+const fmtEV = (v) => (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(2);
+
+/* =====================================================================
+   2. MESIN PERHITUNGAN EXPOSURE  (satu sumber kebenaran)
+   ===================================================================== */
+function calculateApertureStops(aperture) { return 2 * Math.log2(REF.ap / aperture); }
+function calculateShutterStops(shutterSeconds) { return Math.log2(shutterSeconds / REF.sh); }
+function calculateISOStops(iso) { return Math.log2(iso / REF.iso); }
+function lightOffsetOf(lightingId) { return (LIGHTINGS[lightIdx(lightingId)] || LIGHTINGS[2]).ev; }
+
+/** Total Exposure Deviation = Aperture + Shutter + ISO + Scene Light Offset */
+function calculateExposure(s) {
+  s = s || state;
+  return calculateApertureStops(s.apertureValue) +
+         calculateShutterStops(s.shutterValue) +
+         calculateISOStops(s.isoValue) +
+         lightOffsetOf(s.lightingCondition);
+}
+/** Deviation dari parameter kamera saja (tanpa ambient) — dipakai stop simulator */
+function settingsEV(s) {
+  s = s || state;
+  return calculateApertureStops(s.apertureValue) + calculateShutterStops(s.shutterValue) + calculateISOStops(s.isoValue);
+}
+function evStatus(dev) {
+  if (dev <= -2)  return { key: 'TOO DARK',       cls: 'bad', color: '#7FB7E3' };
+  if (dev < -0.5) return { key: 'UNDEREXPOSED',   cls: 'bad', color: '#9FC3E0' };
+  if (dev <= 0.5) return { key: 'WELL EXPOSED',   cls: 'ok',  color: '#B9D78A' };
+  if (dev < 2)    return { key: 'OVEREXPOSED',    cls: 'bad', color: '#E8B75A' };
+  return               { key: 'TOO BRIGHT',      cls: 'bad', color: '#E4736A' };
+}
+function evInterpretation(dev) {
+  if (dev <= -2) return 'Sangat kurang cahaya (very underexposed). Detail shadow hilang total.';
+  if (dev < -0.5) return 'Foto kurang terang (underexposed). Buka aperture, perlambat rana, atau naikkan ISO.';
+  if (dev <= 0.5) return 'Exposure seimbang. Highlight dan shadow sama-sama terjaga.';
+  if (dev < 2) return 'Foto terlalu terang (overexposed). Tutup aperture, percepat rana, atau turunkan ISO.';
+  return 'Terlalu terang (very overexposed). Highlight ter-clip putih total.';
+}
+function dofBlurPx(aperture, scene) {
+  const t = (Math.log2(aperture) - Math.log2(1.4)) / (Math.log2(22) - Math.log2(1.4));
+  const sc = (SCENES[sceneIdx(scene)] || SCENES[0]).dof;
+  return Math.pow(1 - t, 1.7) * 11 * sc;
+}
+function motionBlurLen(shutterSeconds) {
+  const speed = 210; // px/detik pada ruang koordinat 720x450
+  return clamp(speed * shutterSeconds, 0, 150);
+}
+function noiseSigma(iso) {
+  if (iso <= 100) return 0;
+  return Math.min(34, 2.15 * Math.sqrt((iso - 100) / 100));
+}
+function cameraShakeBlur(shutterSeconds, tripod) {
+  if (tripod) return 0;
+  if (shutterSeconds <= 1/64) return 0;           // 50mm: aman di atas 1/60
+  const over = shutterSeconds / (1/60);
+  return clamp((over - 1) * 1.6 + 0.5, 0.5, 4.5);
+}
+/* =====================================================================
+   3. CANVAS OFFSCREEN POOL, LUT & UTIL GAMBAR
+   ===================================================================== */
+const pool = new Map();
+function pooled(key, w, h) {
+  const k = key + w + 'x' + h;
+  let c = pool.get(k);
+  if (!c) { c = document.createElement('canvas'); c.width = w; c.height = h; pool.set(k, c); }
+  return c;
+}
+/* LUT ruang linear (pendekatan proses exposure fotografi) */
+const SRGB2LIN = new Float32Array(256);
+for (let i = 0; i < 256; i++) {
+  const c = i / 255;
+  SRGB2LIN[i] = c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+}
+const LIN2SRGB = new Uint8Array(1025);
+for (let i = 0; i <= 1024; i++) {
+  const v = i / 1024;
+  const o = v <= 0.0031308 ? v * 12.92 : 1.055 * Math.pow(v, 1 / 2.4) - 0.055;
+  LIN2SRGB[i] = clamp(Math.round(o * 255), 0, 255);
+}
+/* PRNG cepat untuk noise (xorshift) */
+let _rs = 88675123;
+function rnd() { _rs ^= _rs << 13; _rs ^= _rs >>> 17; _rs ^= _rs << 5; return ((_rs >>> 0) / 4294967296); }
+function srand(i) { const x = Math.sin(i * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); }
+function vgrad(ctx, x, y, w, h, stops) {
+  const g = ctx.createLinearGradient(x, y, x, y + h);
+  stops.forEach(s => g.addColorStop(s[0], s[1]));
+  ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+}
+function disc(ctx, x, y, r, color, a) {
+  ctx.save(); if (a !== undefined) ctx.globalAlpha = a;
+  ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill(); ctx.restore();
+}
+function glow(ctx, x, y, r, color, a) {
+  const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, color); g.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.save(); ctx.globalAlpha = a === undefined ? 1 : a; ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fill(); ctx.restore();
+}
+function poly(ctx, pts, fill) {
+  ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+  for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+  ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+}
+
+/* =====================================================================
+   4. SCENE — LATAR BELAKANG (background layer)
+   ===================================================================== */
+function drawBg(ctx, scene, t, cfg) {
+  switch (scene) {
+    case 'A': bgPortrait(ctx, t); break;
+    case 'B': bgAction(ctx, t); break;
+    case 'C': bgLandscape(ctx, t); break;
+    case 'D': bgNight(ctx, t); break;
+    case 'E': bgProduct(ctx, t); break;
+  }
+}
+
+function bgPortrait(ctx, t) {
+  vgrad(ctx, 0, 0, 720, 450, [[0, '#5FA3DC'], [0.45, '#9CC8EA'], [0.62, '#DCEBF3']]);
+  glow(ctx, 600, 70, 150, 'rgba(255,244,214,.85)', .8);
+  /* pepohonan jauh */
+  for (let i = 0; i < 9; i++) {
+    const x = 20 + i * 86, y = 246 + srand(i) * 12, r = 42 + srand(i + 40) * 26;
+    disc(ctx, x, y - 34, r, i % 2 ? '#3E7146' : '#35653D');
+    disc(ctx, x - r * .5, y - 20, r * .7, '#2F5B37');
+    disc(ctx, x + r * .5, y - 22, r * .68, '#437A4B');
+    ctx.fillStyle = '#4A3B2C'; ctx.fillRect(x - 5, y, 10, 46);
+  }
+  /* rumput taman */
+  vgrad(ctx, 0, 288, 720, 162, [[0, '#5C9A55'], [1, '#3B6E3C']]);
+  /* jalan setapak */
+  poly(ctx, [[300, 450], [420, 450], [378, 300], [346, 300]], '#C9BFA6');
+  /* lampu taman + bokeh */
+  const lamps = [[96, 178], [232, 168], [520, 172], [648, 186], [452, 160]];
+  lamps.forEach((L, i) => {
+    ctx.fillStyle = '#2E3A33'; ctx.fillRect(L[0] - 3, L[1], 6, 130);
+    disc(ctx, L[0], L[1] - 6, 11, '#FFE9B8');
+    glow(ctx, L[0], L[1] - 6, 34, 'rgba(255,226,160,.55)', .8);
+  });
+  /* bokeh titik cahaya lembut di latar */
+  for (let i = 0; i < 14; i++) {
+    const x = srand(i * 3 + 7) * 720, y = 120 + srand(i * 5 + 2) * 170, r = 7 + srand(i * 7) * 13;
+    glow(ctx, x, y, r * 2.4, i % 3 ? 'rgba(255,236,190,.5)' : 'rgba(190,235,255,.42)', .6);
+  }
+  /* bangku taman */
+  ctx.fillStyle = '#6B543A'; ctx.fillRect(470, 320, 96, 9); ctx.fillRect(470, 300, 96, 7);
+  ctx.fillRect(478, 329, 7, 30); ctx.fillRect(552, 329, 7, 30);
+  /* bunga */
+  for (let i = 0; i < 26; i++) {
+    const x = srand(i * 11 + 3) * 720, y = 330 + srand(i * 13 + 5) * 110;
+    disc(ctx, x, y, 3.4, ['#E8D06A', '#E58AA0', '#F2F0E4', '#C9A0DC'][i % 4], .95);
+  }
+}
+
+function bgAction(ctx, t) {
+  vgrad(ctx, 0, 0, 720, 450, [[0, '#4E8FCB'], [0.5, '#8FBFE4'], [0.6, '#CFE4F1']]);
+  glow(ctx, 120, 66, 120, 'rgba(255,247,220,.75)', .75);
+  /* tribun penonton (statis) */
+  vgrad(ctx, 0, 150, 720, 96, [[0, '#4C5560'], [1, '#39414A']]);
+  for (let i = 0; i < 190; i++) {
+    const x = srand(i * 3 + 1) * 720, y = 156 + srand(i * 7 + 4) * 84;
+    disc(ctx, x, y, 3.4, ['#D9A441', '#E5E7E9', '#7FB7E3', '#E4736A', '#B9D78A'][i % 5], .85);
+  }
+  ctx.fillStyle = '#2C333A'; ctx.fillRect(0, 236, 720, 10);
+  /* lintasan & lapangan */
+  vgrad(ctx, 0, 246, 720, 90, [[0, '#C0603C'], [1, '#A44E31']]);
+  ctx.fillStyle = 'rgba(255,255,255,.75)';
+  for (let l = 0; l < 4; l++) ctx.fillRect(0, 266 + l * 22, 720, 3);
+  vgrad(ctx, 0, 336, 720, 114, [[0, '#4E8B4A'], [1, '#3C7039']]);
+  /* spanduk */
+  ctx.fillStyle = '#1E242A'; ctx.fillRect(30, 176, 168, 40);
+  ctx.fillStyle = '#D9A441'; ctx.font = 'bold 17px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('SPORTS DAY', 114, 203); ctx.textAlign = 'left';
+  /* tiang bendera */
+  ctx.fillStyle = '#8A939B'; ctx.fillRect(640, 120, 6, 130);
+  poly(ctx, [[646, 124], [694, 134], [646, 150]], '#E4736A');
+}
+
+function bgLandscape(ctx, t) {
+  vgrad(ctx, 0, 0, 720, 450, [[0, '#3D7FC4'], [0.5, '#93C4E8'], [0.78, '#D9E9F2']]);
+  glow(ctx, 566, 92, 110, 'rgba(255,248,224,.9)', .9);
+  /* awan */
+  const cl = [[120, 92, 1.1], [320, 64, .85], [470, 130, .7], [640, 78, .95]];
+  cl.forEach((c, i) => {
+    const x = c[0] + Math.sin(t / 9 + i) * 5, y = c[1], s = c[2];
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    disc(ctx, x, y, 30 * s, 'rgba(255,255,255,.92)');
+    disc(ctx, x + 30 * s, y + 6 * s, 24 * s, 'rgba(255,255,255,.9)');
+    disc(ctx, x - 30 * s, y + 8 * s, 22 * s, 'rgba(255,255,255,.88)');
+    disc(ctx, x + 8 * s, y - 16 * s, 22 * s, 'rgba(255,255,255,.95)');
+  });
+  /* pegunungan — 3 lapis kedalaman */
+  poly(ctx, [[0, 300], [90, 176], [170, 264], [252, 158], [340, 292], [430, 210], [520, 300], [610, 196], [720, 300], [720, 450], [0, 450]], '#7E93A8');
+  poly(ctx, [[252, 158], [286, 196], [246, 210], [216, 186]], '#E9F1F6');
+  poly(ctx, [[610, 196], [640, 232], [604, 240], [578, 220]], '#E9F1F6');
+  poly(ctx, [[0, 330], [120, 246], [230, 320], [330, 240], [450, 330], [560, 262], [720, 336], [720, 450], [0, 450]], '#5D7A64');
+  poly(ctx, [[0, 372], [140, 312], [270, 366], [400, 306], [540, 372], [660, 330], [720, 358], [720, 450], [0, 450]], '#43603F');
+  /* hutan jauh */
+  for (let i = 0; i < 40; i++) {
+    const x = i * 19 + srand(i) * 8, y = 372 + srand(i + 9) * 14;
+    poly(ctx, [[x, y - 30], [x + 9, y], [x - 9, y]], i % 2 ? '#2F4F32' : '#375A39');
+  }
+}
+
+function bgNight(ctx, t) {
+  vgrad(ctx, 0, 0, 720, 450, [[0, '#05070F'], [0.55, '#0C1322'], [1, '#141B2C']]);
+  for (let i = 0; i < 70; i++) {
+    const x = srand(i * 2 + 1) * 720, y = srand(i * 3 + 6) * 210;
+    disc(ctx, x, y, srand(i * 5) * 1.5 + .5, '#DDE7F5', .5 + srand(i * 9) * .5);
+  }
+  glow(ctx, 618, 66, 74, 'rgba(226,236,255,.35)', .9);
+  disc(ctx, 618, 66, 24, '#E8EEF8'); disc(ctx, 610, 60, 22, '#0A0F1B');
+  /* gedung */
+  const bld = [[10, 168, 78, 170], [96, 130, 64, 208], [168, 190, 70, 148], [246, 112, 84, 226], [340, 176, 62, 162], [410, 140, 92, 198], [512, 196, 66, 142], [586, 124, 88, 214], [680, 184, 40, 154]];
+  bld.forEach((b, bi) => {
+    ctx.fillStyle = bi % 2 ? '#141A26' : '#10141F'; ctx.fillRect(b[0], b[1], b[2], b[3]);
+    for (let wy = 0; wy < Math.floor(b[3] / 24); wy++)
+      for (let wx = 0; wx < Math.floor(b[2] / 20); wx++) {
+        const r = srand(bi * 97 + wy * 13 + wx * 7);
+        if (r > .45) {
+          ctx.fillStyle = r > .86 ? '#FFE7AE' : (r > .64 ? '#BFD8F2' : '#8FA9C8');
+          ctx.globalAlpha = .55 + srand(bi + wy * 3 + wx) * .45;
+          ctx.fillRect(b[0] + 7 + wx * 20, b[1] + 10 + wy * 24, 9, 12);
+          ctx.globalAlpha = 1;
+        }
+      }
+  });
+  /* jalan */
+  vgrad(ctx, 0, 336, 720, 114, [[0, '#1B1F27'], [1, '#12151B']]);
+  ctx.fillStyle = '#2A2F38'; ctx.fillRect(0, 334, 720, 5);
+  ctx.fillStyle = 'rgba(240,220,150,.65)';
+  for (let i = 0; i < 14; i++) ctx.fillRect(i * 54 + 6, 400, 30, 5);
+  /* lampu jalan */
+  [[70, 0], [250, 1], [430, 2], [620, 3]].forEach(L => {
+    const x = L[0];
+    ctx.fillStyle = '#252B33'; ctx.fillRect(x - 4, 214, 8, 126);
+    ctx.beginPath(); ctx.moveTo(x, 214); ctx.quadraticCurveTo(x + 34, 208, x + 40, 232);
+    ctx.lineWidth = 7; ctx.strokeStyle = '#252B33'; ctx.stroke();
+    disc(ctx, x + 40, 234, 8, '#FFE6A8');
+    glow(ctx, x + 40, 236, 74, 'rgba(255,222,150,.4)', .85);
+    glow(ctx, x + 40, 372, 96, 'rgba(255,214,140,.16)', .8);
+  });
+}
+
+function bgProduct(ctx, t) {
+  /* backdrop studio seamless */
+  vgrad(ctx, 0, 0, 720, 450, [[0, '#E7E8EA'], [0.55, '#C9CBCE'], [1, '#AEB1B5']]);
+  glow(ctx, 250, 120, 340, 'rgba(255,255,255,.55)', .9);
+  /* permukaan meja */
+  vgrad(ctx, 0, 300, 720, 150, [[0, '#C4C6C9'], [1, '#9DA0A4']]);
+  ctx.fillStyle = 'rgba(255,255,255,.5)'; ctx.fillRect(0, 300, 720, 4);
+  /* garis horizon lembut */
+  ctx.fillStyle = 'rgba(0,0,0,.08)'; ctx.fillRect(0, 296, 720, 6);
+  /* cahaya lembut kiri-atas */
+  glow(ctx, 180, 70, 300, 'rgba(255,255,255,.35)', .7);
+}
+
+/* =====================================================================
+   5. SCENE — FOREGROUND (subjek bergerak / tajam)
+   ===================================================================== */
+function drawFg(ctx, scene, t, cfg) {
+  switch (scene) {
+    case 'A': fgPortrait(ctx, t); break;
+    case 'B': fgAction(ctx, t, cfg); break;
+    case 'C': fgLandscape(ctx, t); break;
+    case 'D': fgNight(ctx, t, cfg); break;
+    case 'E': fgProduct(ctx, t); break;
+  }
+}
+
+function drawPerson(ctx, x, y, s, phase) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  const bob = Math.sin(phase * 6.2832) * 2;
+  /* kaki */
+  ctx.strokeStyle = '#2C3540'; ctx.lineWidth = 12; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(-6, -46 + bob); ctx.lineTo(-11 + Math.sin(phase * 6.2832) * 6, 0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(6, -46 + bob); ctx.lineTo(12 - Math.sin(phase * 6.2832) * 6, 0); ctx.stroke();
+  /* badan */
+  ctx.fillStyle = '#3E6C93';
+  ctx.beginPath(); ctx.roundRect(-17, -96 + bob, 34, 54, 12); ctx.fill();
+  /* lengan */
+  ctx.strokeStyle = '#3E6C93'; ctx.lineWidth = 10;
+  ctx.beginPath(); ctx.moveTo(-14, -88 + bob); ctx.lineTo(-25, -54 + bob + Math.sin(phase * 6.2832) * 5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(14, -88 + bob); ctx.lineTo(26, -54 + bob - Math.sin(phase * 6.2832) * 5); ctx.stroke();
+  /* kepala */
+  disc(ctx, 0, -112 + bob, 17, '#E8B98C');
+  ctx.fillStyle = '#2A211B';
+  ctx.beginPath(); ctx.arc(0, -116 + bob, 17, Math.PI * 1.05, Math.PI * 2.05); ctx.fill();
+  ctx.fillStyle = '#2A211B'; ctx.fillRect(-16, -118 + bob, 32, 6);
+  ctx.restore();
+}
+
+function fgPortrait(ctx, t) {
+  /* subjek utama di foreground — jauh dari latar untuk DoF */
+  const bob = Math.sin(t / 1.6) * 3;
+  ctx.save(); ctx.translate(0, bob);
+  drawPerson(ctx, 268, 450, 1.55, 0);
+  /* siluet bayangan di tanah */
+  ctx.fillStyle = 'rgba(0,0,0,.28)';
+  ctx.beginPath(); ctx.ellipse(268, 448, 78, 15, 0, 0, 6.2832); ctx.fill();
+  ctx.restore();
+  /* pagar kayu dekat subjek (tengah) */
+  ctx.fillStyle = '#7A6142';
+  for (let i = 0; i < 5; i++) ctx.fillRect(470 + i * 46, 300, 12, 96);
+  ctx.fillRect(470, 318, 230, 10); ctx.fillRect(470, 356, 230, 10);
+}
+
+function drawRunner(ctx, x, y, s, phase) {
+  ctx.save(); ctx.translate(x, y); ctx.scale(s, s);
+  const sw = Math.sin(phase * 6.2832), cw = Math.cos(phase * 6.2832);
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#25303C'; ctx.lineWidth = 13;
+  ctx.beginPath(); ctx.moveTo(0, -52); ctx.lineTo(-16 + sw * 16, -26); ctx.lineTo(-24 + sw * 26, -2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, -52); ctx.lineTo(16 - sw * 16, -28); ctx.lineTo(26 - sw * 26, -6); ctx.stroke();
+  ctx.fillStyle = '#D9564A';
+  ctx.beginPath(); ctx.roundRect(-18, -106, 36, 58, 12); ctx.fill();
+  ctx.strokeStyle = '#D9564A'; ctx.lineWidth = 11;
+  ctx.beginPath(); ctx.moveTo(-15, -96); ctx.lineTo(-30 + cw * 10, -66); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(15, -96); ctx.lineTo(30 - cw * 10, -70); ctx.stroke();
+  disc(ctx, 2, -122, 17, '#E8B98C');
+  ctx.fillStyle = '#241C17';
+  ctx.beginPath(); ctx.arc(2, -126, 17, Math.PI * 1.02, Math.PI * 2.08); ctx.fill();
+  ctx.restore();
+}
+
+function fgAction(ctx, t, cfg) {
+  const sh = cfg.shutterValue;
+  const speed = 190;
+  const span = 720 + 140;
+  let x = ((t * speed) % span) - 70;
+  const phase = (t * 1.9) % 1;
+  const blur = motionBlurLen(sh);
+  const N = blur > 3 ? clamp(Math.round(blur / 7), 2, 14) : 1;
+  /* jejak gerak (motion blur) */
+  for (let k = N - 1; k >= 0; k--) {
+    const px = x - (blur * k) / Math.max(1, N - 1 || 1);
+    ctx.save();
+    ctx.globalAlpha = k === 0 ? 1 : 0.42 / N * (1 - k / (N + 2)) * 3;
+    drawRunner(ctx, px, 402, 1.25, phase);
+    ctx.restore();
+  }
+  /* bayangan */
+  ctx.fillStyle = 'rgba(0,0,0,.3)';
+  ctx.beginPath(); ctx.ellipse(x, 414, 46, 11, 0, 0, 6.2832); ctx.fill();
+  /* bola melambung dengan jejak */
+  const bx = ((t * 150) % 860) - 70;
+  const by = 350 - Math.abs(Math.sin(t * 2.4)) * 96;
+  const bblur = motionBlurLen(sh) * 0.8;
+  const bN = bblur > 4 ? clamp(Math.round(bblur / 8), 2, 12) : 1;
+  for (let k = bN - 1; k >= 0; k--) {
+    const px = bx - (bblur * k) / Math.max(1, bN - 1 || 1);
+    ctx.save(); ctx.globalAlpha = k === 0 ? 1 : 0.4 / bN * 3;
+    disc(ctx, px, by, 21, '#E8A33D');
+    ctx.strokeStyle = '#8A5A18'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(px, by, 21, 0, 6.2832); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px - 21, by); ctx.quadraticCurveTo(px, by - 9, px + 21, by); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function fgLandscape(ctx, t) {
+  /* foreground tajam: rumput, batu, pohon dekat */
+  vgrad(ctx, 0, 404, 720, 46, [[0, '#38603A'], [1, '#25412A']]);
+  for (let i = 0; i < 70; i++) {
+    const x = srand(i * 4 + 2) * 720, y = 410 + srand(i * 6 + 1) * 38;
+    ctx.strokeStyle = i % 3 ? '#4C8049' : '#5E9555'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + (srand(i) - .5) * 8, y - 12 - srand(i + 3) * 10); ctx.stroke();
+  }
+  /* batu */
+  ctx.fillStyle = '#6E7076';
+  ctx.beginPath(); ctx.ellipse(120, 430, 46, 22, -.1, 0, 6.2832); ctx.fill();
+  ctx.fillStyle = '#83868C';
+  ctx.beginPath(); ctx.ellipse(112, 424, 34, 15, -.1, 0, 6.2832); ctx.fill();
+  ctx.fillStyle = '#6E7076';
+  ctx.beginPath(); ctx.ellipse(610, 438, 60, 24, .08, 0, 6.2832); ctx.fill();
+  /* pohon dekat kanan */
+  ctx.fillStyle = '#4A382A'; ctx.fillRect(664, 300, 22, 140);
+  disc(ctx, 674, 286, 64, '#2F5B37'); disc(ctx, 640, 300, 44, '#376A3E'); disc(ctx, 706, 302, 46, '#376A3E');
+  disc(ctx, 676, 254, 42, '#437A4B');
+  /* bunga dekat */
+  for (let i = 0; i < 12; i++) {
+    const x = 200 + srand(i * 9) * 300, y = 418 + srand(i * 5) * 26;
+    ctx.strokeStyle = '#4C8049'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, y - 16); ctx.stroke();
+    disc(ctx, x, y - 19, 5, ['#F2E27A', '#F5F3E8', '#E98FA8'][i % 3]);
+  }
+}
+
+function fgNight(ctx, t, cfg) {
+  const sh = cfg.shutterValue;
+  const trail = clamp(240 * sh, 0, 420);          /* light trail ∝ durasi rana */
+  const cars = [
+    { off: 0, dir: 1, y: 372, c: '#B9433A', head: '#FFF3D0' },
+    { off: 3.4, dir: 1, y: 424, c: '#3E6FA8', head: '#FFF3D0' },
+    { off: 6.1, dir: -1, y: 398, c: '#D9A441', head: '#FFE9B8' }
+  ];
+  cars.forEach((car, ci) => {
+    const span = 900;
+    let x = ((t * 175 + car.off * 130) % span) - 90;
+    if (car.dir < 0) x = 720 - x;
+    /* jejak lampu (trails) */
+    if (trail > 6) {
+      const back = trail * car.dir;
+      const g = ctx.createLinearGradient(x, 0, x - back, 0);
+      const col = car.dir > 0 ? 'rgba(255,238,190,.95)' : 'rgba(255,90,70,.95)';
+      g.addColorStop(0, col); g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(Math.min(x, x - back), car.y - 4, Math.abs(back), 6);
+      ctx.globalAlpha = .55;
+      ctx.fillRect(Math.min(x, x - back), car.y - 12, Math.abs(back), 4);
+      ctx.globalAlpha = 1;
+    }
+    /* bodi mobil */
+    ctx.fillStyle = car.c;
+    ctx.beginPath(); ctx.roundRect(x - 34, car.y - 22, 68, 22, 7); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,.22)';
+    ctx.beginPath(); ctx.roundRect(x - 16, car.y - 34, 34, 14, 6); ctx.fill();
+    disc(ctx, x - 20, car.y, 7, '#15181C'); disc(ctx, x + 20, car.y, 7, '#15181C');
+    /* lampu */
+    const hx = car.dir > 0 ? x + 34 : x - 34;
+    glow(ctx, hx, car.y - 8, 40, 'rgba(255,244,214,.55)', .9);
+    disc(ctx, hx, car.y - 8, 5, car.head);
+  });
+  /* siluet foreground (pagar) */
+  ctx.fillStyle = '#0A0D12';
+  ctx.fillRect(0, 444, 720, 6);
+  for (let i = 0; i < 16; i++) ctx.fillRect(i * 48, 430, 6, 20);
+}
+
+function fgProduct(ctx, t, cfg) {
+  const cx = 360, baseY = 396;
+  /* bayangan lembut (soft light) */
+  const g = ctx.createRadialGradient(cx + 26, baseY, 6, cx + 26, baseY, 130);
+  g.addColorStop(0, 'rgba(30,34,40,.62)'); g.addColorStop(1, 'rgba(30,34,40,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.ellipse(cx + 30, baseY, 128, 34, 0, 0, 6.2832); ctx.fill();
+  /* refleksi meja */
+  ctx.save(); ctx.globalAlpha = .22; ctx.translate(0, baseY * 2); ctx.scale(1, -1);
+  bottlePath(ctx, cx, baseY, 1);
+  ctx.restore();
+  bottlePath(ctx, cx, baseY, 1);
+}
+function bottlePath(ctx, cx, baseY) {
+  const w = 78, h = 168;
+  const top = baseY - h;
+  /* badan botol */
+  const bg2 = ctx.createLinearGradient(cx - w / 2, 0, cx + w / 2, 0);
+  bg2.addColorStop(0, '#2E6E96'); bg2.addColorStop(.28, '#5FA6CE');
+  bg2.addColorStop(.5, '#7CC0E2'); bg2.addColorStop(.78, '#3F86AF'); bg2.addColorStop(1, '#26587A');
+  ctx.fillStyle = bg2;
+  ctx.beginPath();
+  ctx.moveTo(cx - w / 2, baseY);
+  ctx.lineTo(cx - w / 2, top + 54);
+  ctx.quadraticCurveTo(cx - w / 2, top + 28, cx - 20, top + 20);
+  ctx.lineTo(cx - 20, top + 6);
+  ctx.lineTo(cx + 20, top + 6);
+  ctx.lineTo(cx + 20, top + 20);
+  ctx.quadraticCurveTo(cx + w / 2, top + 28, cx + w / 2, top + 54);
+  ctx.lineTo(cx + w / 2, baseY);
+  ctx.closePath(); ctx.fill();
+  /* tutup */
+  ctx.fillStyle = '#D9A441';
+  ctx.beginPath(); ctx.roundRect(cx - 23, top - 8, 46, 18, 5); ctx.fill();
+  ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(cx - 23, top + 4, 46, 3);
+  /* label */
+  ctx.fillStyle = '#EDEDE6';
+  ctx.beginPath(); ctx.roundRect(cx - w / 2 + 4, top + 62, w - 8, 74, 6); ctx.fill();
+  ctx.fillStyle = '#2E6E96'; ctx.fillRect(cx - w / 2 + 4, top + 62, w - 8, 22);
+  ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 15px system-ui'; ctx.textAlign = 'center';
+  ctx.fillText('PURE', cx, top + 78);
+  ctx.fillStyle = '#5A6169'; ctx.font = '9px system-ui';
+  ctx.fillText('SPARKLING WATER', cx, top + 100);
+  ctx.fillStyle = '#B9D78A'; ctx.fillRect(cx - 24, top + 110, 48, 6);
+  ctx.textAlign = 'left';
+  /* highlight permukaan */
+  const hg = ctx.createLinearGradient(cx - w / 2, 0, cx - w / 2 + 26, 0);
+  hg.addColorStop(0, 'rgba(255,255,255,.55)'); hg.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = hg;
+  ctx.beginPath(); ctx.roundRect(cx - w / 2 + 5, top + 26, 22, h - 34, 9); ctx.fill();
+  ctx.fillStyle = 'rgba(255,255,255,.35)';
+  ctx.fillRect(cx + w / 2 - 12, top + 34, 5, h - 60);
+}
+/* =====================================================================
+   6. PIPELINE RENDER — compose → exposure (linear) → noise → shake
+   ===================================================================== */
+function renderSceneImage(target, cfg, t) {
+  const W = target.width, H = target.height;
+  const sx = W / 720, sy = H / 450;
+  const bg = pooled('bg', W, H), fg = pooled('fg', W, H), comp = pooled('comp', W, H);
+  const bctx = bg.getContext('2d'), fctx = fg.getContext('2d'), cctx = comp.getContext('2d');
+
+  bctx.setTransform(1, 0, 0, 1, 0, 0); bctx.clearRect(0, 0, W, H);
+  bctx.setTransform(sx, 0, 0, sy, 0, 0); drawBg(bctx, cfg.sceneType, t, cfg);
+  fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.clearRect(0, 0, W, H);
+  fctx.setTransform(sx, 0, 0, sy, 0, 0); drawFg(fctx, cfg.sceneType, t, cfg);
+
+  /* --- compose: background blur menurut Depth of Field --- */
+  const blur = dofBlurPx(cfg.apertureValue, cfg.sceneType);
+  cctx.setTransform(1, 0, 0, 1, 0, 0);
+  cctx.clearRect(0, 0, W, H);
+  if (blur > 0.35) {
+    /* blur dijalankan pada separuh resolusi (4× lebih hemat), lalu dinaikkan lagi */
+    const hw = Math.max(2, W >> 1), hh = Math.max(2, H >> 1);
+    const small = pooled('bgs', hw, hh), sctx = small.getContext('2d');
+    sctx.setTransform(1, 0, 0, 1, 0, 0);
+    sctx.clearRect(0, 0, hw, hh);
+    const pad = Math.ceil(blur * 1.6) + 2;
+    sctx.filter = 'blur(' + (blur / 2).toFixed(2) + 'px)';
+    sctx.drawImage(bg, -pad, -pad, hw + pad * 2, hh + pad * 2);
+    sctx.filter = 'none';
+    cctx.drawImage(small, 0, 0, W, H);
+  } else {
+    cctx.drawImage(bg, 0, 0);
+  }
+  cctx.drawImage(fg, 0, 0);
+
+  const dev = calculateExposure(cfg);
+  const gain = Math.pow(2, dev);
+  const sigma = noiseSigma(cfg.isoValue);
+  const shake = cameraShakeBlur(cfg.shutterValue, cfg.tripodMode);
+
+  const tctx = target.getContext('2d');
+  const needProcess = Math.abs(gain - 1) > 0.0015 || sigma > 0;
+
+  if (!needProcess && shake <= 0.3) {
+    tctx.setTransform(1, 0, 0, 1, 0, 0);
+    tctx.drawImage(comp, 0, 0);
+    return;
+  }
+
+  if (shake > 0.3) { /* camera shake: sapuan arah acak kecil */
+    tctx.setTransform(1, 0, 0, 1, 0, 0);
+    tctx.clearRect(0, 0, W, H);
+    tctx.filter = 'blur(' + (shake * 0.7).toFixed(2) + 'px)';
+    const j = shake * 1.4;
+    tctx.drawImage(comp, (rnd() - .5) * j, (rnd() - .5) * j);
+    tctx.filter = 'none';
+  }
+
+  if (needProcess) {
+    /* eksposur + noise dibaca langsung dari buffer komposit (tanpa salinan ekstra) */
+    const src = shake > 0.3 ? tctx : cctx;
+    const img = src.getImageData(0, 0, W, H);
+    const d = img.data;
+    const useNoise = sigma > 0;
+    const inv = 1 / 255;
+    for (let i = 0; i < d.length; i += 4) {
+      /* eksposur pada ruang linear, lalu konversi kembali ke tampilan RGB */
+      let r = SRGB2LIN[d[i]] * gain; if (r > 1) r = 1;
+      let g = SRGB2LIN[d[i + 1]] * gain; if (g > 1) g = 1;
+      let b = SRGB2LIN[d[i + 2]] * gain; if (b > 1) b = 1;
+      let R = LIN2SRGB[(r * 1024) | 0], G = LIN2SRGB[(g * 1024) | 0], B = LIN2SRGB[(b * 1024) | 0];
+      if (useNoise) {
+        const lum = (R * 0.299 + G * 0.587 + B * 0.114) * inv;
+        const local = sigma * (1 + 0.95 * (1 - lum));   /* grain lebih terlihat di area gelap */
+        const n = (rnd() - .5) * 2 * local;
+        const c = (rnd() - .5) * local * 0.85;          /* sedikit variasi warna (chroma noise) */
+        R = R + n + c; G = G + n; B = B + n - c;
+        d[i] = R < 0 ? 0 : (R > 255 ? 255 : R);
+        d[i + 1] = G < 0 ? 0 : (G > 255 ? 255 : G);
+        d[i + 2] = B < 0 ? 0 : (B > 255 ? 255 : B);
+      } else {
+        d[i] = R; d[i + 1] = G; d[i + 2] = B;
+      }
+    }
+    tctx.putImageData(img, 0, 0);
+  }
+}
+
+/** Fungsi render utama preview kamera (dipanggil tiap frame) */
+function renderCameraScene(t) {
+  const cv = $('preview');
+  renderSceneImage(cv, state, t);
+}
+
+/* =====================================================================
+   7. MAIN LOOP (requestAnimationFrame)
+   ===================================================================== */
+let _t0 = performance.now(), _lastHist = 0, _histReady = false;
+function mainLoop(now) {
+  const t = (now - _t0) / 1000;
+  renderCameraScene(t);
+  animateAperture(t);
+  animateShutter(t);
+  drawApBokeh(t); drawShMotion(t); drawIsoNoiseViz(); drawIsoGainViz();
+  if (now - _lastHist > 220) { _lastHist = now; renderHistogram(); }
+  requestAnimationFrame(mainLoop);
+}
+
+/* =====================================================================
+   8. RENDER PANEL — APERTURE
+   ===================================================================== */
+const apState = { r: 34, target: 34, hot: false };
+function apertureRadius(v) { /* radius bukaan diafragma 0..46 */
+  const t = (Math.log2(v) - Math.log2(1.4)) / (Math.log2(22) - Math.log2(1.4));
+  return lerp(46, 5.5, t);
+}
+function renderAperture(hot) {
+  const v = state.apertureValue;
+  $('apValue').textContent = fLabel(v);
+  $('apSlider').value = apIndex(v);
+  updateRangeFill($('apSlider'));
+  const lightPct = Math.round(((Math.log2(22) - Math.log2(v)) / (Math.log2(22) - Math.log2(1.4))) * 100);
+  $('apLightBar').style.width = lightPct + '%';
+  $('apLightTxt').textContent = lightPct + '%';
+  const dofT = 1 - lightPct / 100;
+  $('apDofBar').style.width = Math.round((1 - dofT) * 100) + '%';
+  const dofName = lightPct > 78 ? 'Very Shallow' : lightPct > 55 ? 'Shallow' : lightPct > 32 ? 'Medium' : 'Deep';
+  $('apDofTxt').textContent = dofName;
+  apState.target = apertureRadius(v);
+  drawApertureSVG(apState.r);
+  /* feedback dinamis */
+  let txt;
+  if (v <= 2) txt = fLabel(v) + ' — Bukaan diafragma sangat lebar. Cahaya yang masuk paling banyak dan menghasilkan depth of field sangat dangkal; background menjadi blur (bokeh kuat).';
+  else if (v <= 4) txt = fLabel(v) + ' — Bukaan diafragma lebar. Cahaya yang masuk lebih banyak dan menghasilkan depth of field yang dangkal.';
+  else if (v <= 8) txt = fLabel(v) + ' — Bukaan diafragma sedang. Cahaya masuk seimbang dan area ketajaman cukup luas.';
+  else if (v <= 16) txt = fLabel(v) + ' — Bukaan diafragma sempit. Cahaya yang masuk lebih sedikit dan area ketajaman gambar menjadi lebih luas.';
+  else txt = fLabel(v) + ' — Bukaan diafragma sangat sempit. Cahaya masuk sangat sedikit, seluruh pemandangan tajam, tetapi risiko goyang rana meningkat.';
+  $('apFeedback').textContent = txt;
+  $('apBokehCap').textContent = 'Blur: ' + dofBlurPx(v, state.sceneType).toFixed(1) + ' px';
+  if (hot) highlightTri('triEdgeA', 'APERTURE ' + fLabel(v));
+}
+function drawApertureSVG(r) {
+  const svg = $('apertureSvg');
+  const cx = 64, cy = 64, R = 52;
+  if (!svg.dataset.built) {
+    let html = '<circle cx="64" cy="64" r="56" fill="#0E1114" stroke="#39424A" stroke-width="2"/>' +
+      '<g id="apBlades"></g><circle id="apHole" cx="64" cy="64" r="30" fill="#1A2733" stroke="#0B0D0F" stroke-width="2"/>' +
+      '<circle cx="64" cy="64" r="56" fill="none" stroke="#4A545C" stroke-width="1" stroke-dasharray="3 5"/>' +
+      '<text x="64" y="120" fill="#6E7780" font-size="9" text-anchor="middle" letter-spacing="1.5">DIAPHRAGM</text>';
+    svg.innerHTML = html;
+    svg.dataset.built = '1';
+    let blades = '';
+    for (let i = 0; i < 8; i++) blades += '<path class="blade" data-i="' + i + '" fill="#2C343B" stroke="#49525A" stroke-width="1"/>';
+    svg.querySelector('#apBlades').innerHTML = blades;
+  }
+  const hole = svg.querySelector('#apHole');
+  hole.setAttribute('r', r.toFixed(2));
+  /* sinar menembus bukaan */
+  hole.setAttribute('fill', 'rgba(120,190,235,' + (0.14 + 0.5 * (1 - r / 46)).toFixed(2) + ')');
+  const paths = svg.querySelectorAll('.blade');
+  paths.forEach((p, i) => {
+    const a0 = (i * 45 - 90) * Math.PI / 180, a1 = ((i + 1) * 45 - 90) * Math.PI / 180;
+    const skew = 0.62; /* tepi bilah menyilip → realistis */
+    const p0 = [cx + Math.cos(a0) * R, cy + Math.sin(a0) * R];
+    const p1 = [cx + Math.cos(a1) * R, cy + Math.sin(a1) * R];
+    const h0 = [cx + Math.cos(a0 + skew) * r, cy + Math.sin(a0 + skew) * r];
+    const h1 = [cx + Math.cos(a1 + skew) * r, cy + Math.sin(a1 + skew) * r];
+    p.setAttribute('d', 'M' + p0[0].toFixed(1) + ',' + p0[1].toFixed(1) +
+      ' A' + R + ',' + R + ' 0 0 1 ' + p1[0].toFixed(1) + ',' + p1[1].toFixed(1) +
+      ' L' + h1[0].toFixed(1) + ',' + h1[1].toFixed(1) +
+      ' L' + h0[0].toFixed(1) + ',' + h0[1].toFixed(1) + ' Z');
+  });
+}
+function animateAperture() {
+  if (Math.abs(apState.r - apState.target) > 0.08) {
+    apState.r = lerp(apState.r, apState.target, 0.18);
+    drawApertureSVG(apState.r);
+  }
+}
+function drawApBokeh() {
+  const cv = $('apBokeh'), ctx = cv.getContext('2d');
+  if (cv.dataset.key === String(state.apertureValue)) return;
+  cv.dataset.key = String(state.apertureValue);
+  const blur = dofBlurPx(state.apertureValue, 'A');
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#141A16'; ctx.fillRect(0, 0, 150, 112);
+  ctx.fillStyle = '#22301F'; ctx.fillRect(0, 74, 150, 38);
+  const pts = [[24, 34, '#FFDFA0'], [64, 22, '#A8E0FF'], [110, 40, '#FFE9B8'], [134, 24, '#CFF3C0'], [86, 56, '#FFC9E0'], [44, 62, '#FFE2A8']];
+  pts.forEach((p, i) => {
+    const r = 5 + blur * 1.5;
+    if (blur > 1.2) { glow(ctx, p[0], p[1], r * 2.2, p[2], .55); disc(ctx, p[0], p[1], r, p[2], .5); }
+    else { disc(ctx, p[0], p[1], 5, p[2], .9); }
+  });
+  /* subjek tajam di depan */
+  ctx.fillStyle = '#E8B98C'; ctx.beginPath(); ctx.arc(46, 78, 13, 0, 6.2832); ctx.fill();
+  ctx.fillStyle = '#3E6C93'; ctx.beginPath(); ctx.roundRect(32, 90, 30, 22, 8); ctx.fill();
+}
+
+/* =====================================================================
+   9. RENDER PANEL — SHUTTER
+   ===================================================================== */
+function renderShutter(hot) {
+  const v = state.shutterValue;
+  $('shValue').textContent = shLabel(v);
+  $('shSlider').value = shIndex(v);
+  updateRangeFill($('shSlider'));
+  const minS = 1 / 4000, maxS = 8;
+  const pct = ((Math.log2(v) - Math.log2(minS)) / (Math.log2(maxS) - Math.log2(minS))) * 100;
+  $('shDurBar').style.width = clamp(pct, 2, 100) + '%';
+  const ms = v * 1000;
+  $('shDurTxt').textContent = ms < 1 ? (v * 1e6).toFixed(0) + ' µs' : ms < 1000 ? ms.toFixed(ms < 10 ? 1 : 0) + ' ms' : v.toFixed(1) + ' s';
+  const blurPx = motionBlurLen(v);
+  const blurPct = clamp((blurPx / 150) * 100, 0, 100);
+  $('shBlurBar').style.width = blurPct + '%';
+  $('shBlurTxt').textContent = blurPx < 1.5 ? 'Frozen' : blurPx < 12 ? 'Low' : blurPx < 50 ? 'Medium' : 'Strong';
+  /* indikator durasi + shutter curtain */
+  drawShutterSVG();
+  /* camera shake */
+  const shake = cameraShakeBlur(v, state.tripodMode);
+  state.shake = shake > 0.3;
+  $('shakeMsg').classList.toggle('show', state.shake);
+  $('shakeWarning').classList.toggle('show', state.shake);
+  if (state.shake) $('shakeTxt').textContent = 'Rana ' + shLabel(v) + ' terlalu lambat untuk pemakaian handheld (aturan praktis focal length 50mm ≈ 1/60s). Aktifkan TRIPOD untuk menghilangkan goyangan.';
+  let txt;
+  if (v <= 1 / 500) txt = 'Anda mengubah shutter menjadi ' + shLabel(v) + ' detik. Durasi sangat pendek, gerakan mudah dibekukan (freeze motion), tetapi cahaya yang diterima sensor menjadi sangat sedikit.';
+  else if (v <= 1 / 125) txt = 'Anda mengubah shutter menjadi ' + shLabel(v) + ' detik. Gerakan relatif tajam, aman dari camera shake, dan cocok untuk momen sehari-hari.';
+  else if (v <= 1 / 30) txt = 'Shutter ' + shLabel(v) + ' detik. Cahaya masuk lebih banyak, tetapi objek bergerak mulai meninggalkan motion blur — sebaiknya gunakan tripod.';
+  else txt = 'Shutter ' + shLabel(v) + ' detik. Durasi panjang, cahaya diterima sangat banyak, gerakan menjadi smear/trail panjang, dan goyangan tangan sangat terlihat.';
+  $('shFeedback').textContent = txt;
+  $('shMotionCap').textContent = 'Trail: ' + Math.round(blurPx) + ' px';
+  if (hot) highlightTri('triEdgeS', 'SHUTTER ' + shLabel(v));
+}
+function drawShutterSVG() {
+  const svg = $('shutterSvg');
+  if (!svg.dataset.built) {
+    svg.innerHTML =
+      '<rect x="6" y="6" width="116" height="116" rx="8" fill="#0E1114" stroke="#39424A"/>' +
+      '<rect id="shTop" x="10" y="10" width="108" height="54" fill="#39424A" stroke="#4A545C"/>' +
+      '<rect id="shBot" x="10" height="54" width="108" y="64" fill="#313940" stroke="#4A545C"/>' +
+      '<rect x="10" y="62" width="108" height="4" fill="#D9A441" opacity=".8"/>' +
+      '<circle cx="64" cy="64" r="17" fill="none" stroke="#7FB7E3" stroke-width="2" opacity=".8"/>' +
+      '<circle cx="64" cy="64" r="7" fill="#7FB7E3" opacity=".35"/>' +
+      '<text x="64" y="120" fill="#6E7780" font-size="9" text-anchor="middle" letter-spacing="1.5">SHUTTER</text>';
+    svg.dataset.built = '1';
+  }
+  /* posisi tirai mengikuti durasi rana (logaritmik) */
+  const pct = clamp((Math.log2(state.shutterValue) - Math.log2(1 / 4000)) / (Math.log2(8) - Math.log2(1 / 4000)), 0, 1);
+  const open = 4 + pct * 46;
+  svg.querySelector('#shTop').setAttribute('height', open.toFixed(1));
+  svg.querySelector('#shBot').setAttribute('y', (118 - open).toFixed(1));
+  svg.querySelector('#shBot').setAttribute('height', open.toFixed(1));
+}
+function animateShutter() { /* gerak halus ditangani via renderShutter saat nilai berubah */ }
+
+function drawShMotion() {
+  const cv = $('shMotion'), ctx = cv.getContext('2d');
+  if (cv.dataset.key === String(state.shutterValue)) return;
+  cv.dataset.key = String(state.shutterValue);
+  const blur = motionBlurLen(state.shutterValue);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#101418'; ctx.fillRect(0, 0, 150, 112);
+  ctx.fillStyle = '#1D242B'; ctx.fillRect(0, 78, 150, 34);
+  ctx.strokeStyle = '#2C343A'; ctx.setLineDash([6, 6]);
+  ctx.beginPath(); ctx.moveTo(0, 95); ctx.lineTo(150, 95); ctx.stroke(); ctx.setLineDash([]);
+  const x = 46, y = 62;
+  const N = blur > 4 ? clamp(Math.round(blur / 7), 2, 14) : 1;
+  for (let k = N - 1; k >= 0; k--) {
+    const px = x - (Math.min(blur, 120) * k) / Math.max(1, N - 1 || 1);
+    ctx.save();
+    ctx.globalAlpha = k === 0 ? 1 : 0.5 / N * 2.4;
+    disc(ctx, px, y, 14, '#D9A441');
+    ctx.strokeStyle = '#8A5A18'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(px, y, 14, 0, 6.2832); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(px - 14, y); ctx.quadraticCurveTo(px, y - 7, px + 14, y); ctx.stroke();
+    ctx.restore();
+  }
+  ctx.fillStyle = '#6E7780'; ctx.font = '9px monospace';
+  ctx.fillText(N === 1 ? 'BEKU (frozen)' : 'MOTION TRAIL', 8, 106);
+}
+/* =====================================================================
+   10. RENDER PANEL — ISO
+   ===================================================================== */
+function renderISO(hot) {
+  const v = state.isoValue;
+  $('isoValue').textContent = 'ISO ' + v;
+  $('isoSlider').value = isoIndex(v);
+  updateRangeFill($('isoSlider'));
+  const gainStops = Math.log2(v / 100);
+  const gainPct = clamp((gainStops / Math.log2(128)) * 100, 0, 100);
+  $('isoGainBar').style.width = gainPct + '%';
+  $('isoGainTxt').textContent = (v / 100).toFixed(v < 1000 ? 1 : 0) + '×  (+' + gainStops.toFixed(1) + ' EV)';
+  const sigma = noiseSigma(v);
+  const noisePct = clamp((sigma / 34) * 100, 0, 100);
+  $('isoNoiseBar').style.width = noisePct + '%';
+  const noiseName = sigma === 0 ? 'None' : sigma < 3 ? 'Low' : sigma < 7 ? 'Moderate' : sigma < 13 ? 'High' : 'Severe';
+  $('isoNoiseTxt').textContent = noiseName;
+  const quality = clamp(Math.round(100 - noisePct * 0.92), 6, 100);
+  $('isoDetailBar').style.width = quality + '%';
+  $('isoDetailTxt').textContent = quality > 90 ? 'Excellent — ' + quality + '%' : quality > 70 ? 'Good — ' + quality + '%' : quality > 45 ? 'Fair — ' + quality + '%' : 'Poor — ' + quality + '%';
+  $('isoNoiseCap').textContent = sigma === 0 ? 'Sensor bersih' : 'Noise σ ≈ ' + sigma.toFixed(1) + ' level';
+  let txt;
+  if (v <= 200) txt = 'ISO ' + v + ' — Penguatan sinyal rendah. Foto relatif gelap pada pengaturan lain sama, tetapi digital noise minimal dan detail paling bersih.';
+  else if (v <= 800) txt = 'ISO ' + v + ' memberikan penguatan sinyal lebih tinggi. Foto terlihat lebih terang, noise mulai terlihat halus pada area gelap.';
+  else if (v <= 3200) txt = 'ISO ' + v + ' memberikan penguatan sinyal tinggi. Foto terlihat lebih terang, tetapi digital noise juga meningkat dan detail mulai berkurang.';
+  else txt = 'ISO ' + v + ' — Penguatan sinyal sangat tinggi. Sangat membantu di tempat gelap, namun noise kasar dan warna mulai kehilangan akurasi.';
+  $('isoFeedback').textContent = txt;
+  if (hot) highlightTri('triEdgeI', 'ISO ' + v);
+}
+function drawIsoNoiseViz() {
+  const cv = $('isoNoiseViz'), ctx = cv.getContext('2d');
+  if (cv.dataset.key === String(state.isoValue)) return;
+  cv.dataset.key = String(state.isoValue);
+  const W = 150, H = 112;
+  const img = ctx.createImageData(W, H);
+  const d = img.data;
+  const sigma = noiseSigma(state.isoValue);
+  /* patch gradasi abu-abu: gelap di kiri, terang di kanan (noise lebih terlihat di gelap) */
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+    const i = (y * W + x) * 4;
+    const base = 34 + (x / W) * 186;
+    let R = base, G = base, B = base;
+    if (sigma > 0) {
+      const lum = base / 255;
+      const local = sigma * (1 + 0.95 * (1 - lum));
+      const n = (rnd() - .5) * 2 * local;
+      const c = (rnd() - .5) * local * 0.9;
+      R = base + n + c; G = base + n; B = base + n - c;
+    }
+    d[i] = R < 0 ? 0 : R > 255 ? 255 : R;
+    d[i + 1] = G < 0 ? 0 : G > 255 ? 255 : G;
+    d[i + 2] = B < 0 ? 0 : B > 255 ? 255 : B;
+    d[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  ctx.fillStyle = 'rgba(255,255,255,.6)'; ctx.font = '9px monospace';
+  ctx.fillText('SHADOW', 6, H - 6); ctx.textAlign = 'right'; ctx.fillText('HIGHLIGHT', W - 6, H - 6); ctx.textAlign = 'left';
+}
+function drawIsoGainViz() {
+  const cv = $('isoGainViz'), ctx = cv.getContext('2d');
+  if (cv.dataset.key === String(state.isoValue)) return;
+  cv.dataset.key = String(state.isoValue);
+  const W = 150, H = 112;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#101418'; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = '#252C33';
+  for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(0, i * 28); ctx.lineTo(W, i * 28); ctx.stroke(); }
+  /* kurva gain logaritmik */
+  ctx.beginPath();
+  ISOS.forEach((iso, i) => {
+    const x = 10 + (i / (ISOS.length - 1)) * (W - 24);
+    const y = H - 16 - (Math.log2(iso / 100) / Math.log2(128)) * (H - 34);
+    i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+  });
+  ctx.strokeStyle = '#D9A441'; ctx.lineWidth = 2.5; ctx.stroke();
+  /* titik aktif */
+  const ai = isoIndex(state.isoValue);
+  const ax = 10 + (ai / (ISOS.length - 1)) * (W - 24);
+  const ay = H - 16 - (Math.log2(state.isoValue / 100) / Math.log2(128)) * (H - 34);
+  ctx.fillStyle = '#B9D78A'; ctx.beginPath(); ctx.arc(ax, ay, 5, 0, 6.2832); ctx.fill();
+  ctx.strokeStyle = '#101214'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.fillStyle = '#6E7780'; ctx.font = '9px monospace';
+  ctx.fillText('ISO 100', 8, H - 4); ctx.textAlign = 'right'; ctx.fillText('12800', W - 6, H - 4); ctx.textAlign = 'left';
+}
+
+/* =====================================================================
+   11. SEGITIGA EXPOSURE
+   ===================================================================== */
+function edgePoint(ax, ay, bx, by, t) { return [lerp(ax, bx, t), lerp(ay, by, t)]; }
+function highlightTri(id, label) {
+  ['triEdgeA', 'triEdgeS', 'triEdgeI'].forEach(e => $(e).classList.toggle('hot', e === id));
+  $('triHot').textContent = label || '';
+  clearTimeout(highlightTri._t);
+  highlightTri._t = setTimeout(() => {
+    ['triEdgeA', 'triEdgeS', 'triEdgeI'].forEach(e => $(e).classList.remove('hot'));
+    $('triHot').textContent = '';
+  }, 1600);
+}
+function renderExposureTriangle() {
+  const apT = 1 - apIndex(state.apertureValue) / (APERTURES.length - 1);   /* kiri-atas: wide → narrow ke bawah */
+  const shT = shIndex(state.shutterValue) / (SHUTTERS.length - 1);         /* kanan-atas: fast → slow */
+  const isoT = isoIndex(state.isoValue) / (ISOS.length - 1);               /* dasar: low → high */
+  /* sisi kiri = aperture (28,236)→(165,26): t=0 wide di bawah */
+  const A = edgePoint(28, 236, 165, 26, apT);
+  const S = edgePoint(165, 26, 302, 236, shT);
+  const I = edgePoint(28, 236, 302, 236, isoT);
+  $('triDotA').setAttribute('cx', A[0].toFixed(1)); $('triDotA').setAttribute('cy', A[1].toFixed(1));
+  $('triDotS').setAttribute('cx', S[0].toFixed(1)); $('triDotS').setAttribute('cy', S[1].toFixed(1));
+  $('triDotI').setAttribute('cx', I[0].toFixed(1)); $('triDotI').setAttribute('cy', I[1].toFixed(1));
+  const dev = state.exposureDeviation;
+  $('triEV').textContent = fmtEV(dev) + ' EV';
+  $('triEV').setAttribute('fill', evStatus(dev).color);
+}
+
+/* =====================================================================
+   12. EXPOSURE METER
+   ===================================================================== */
+function buildMeterScale() {
+  const ticks = $('meterTicks'), labels = $('meterLabels');
+  let th = '', lh = '';
+  for (let v = -3; v <= 3; v++) {
+    const x = 20 + ((v + 3) / 6) * 296;
+    th += '<line x1="' + x + '" y1="46" x2="' + x + '" y2="80" stroke="#8A939B" stroke-width="' + (v === 0 ? 2.5 : 1.4) + '"/>';
+    th += '<text x="' + x + '" y="38">' + (v > 0 ? '+' + v : v) + '</text>';
+    lh += '<text x="' + x + '" y="93">' + (v === 0 ? '0' : (v > 0 ? '+' + v : '−' + Math.abs(v))) + '</text>';
+  }
+  ticks.innerHTML = th; labels.innerHTML = lh;
+}
+function renderExposureMeter() {
+  const dev = state.exposureDeviation;
+  const x = 20 + ((clamp(dev, -3, 3) + 3) / 6) * 296;
+  $('meterNeedle').setAttribute('transform', 'translate(' + x.toFixed(1) + ',0)');
+  $('meterEV').textContent = fmtEV(dev) + ' EV';
+  const st = evStatus(dev);
+  $('meterEV').setAttribute('fill', st.color);
+  $('meterStatus').textContent = st.key;
+  $('meterStatus').style.color = st.color;
+  $('meterHint').textContent = evInterpretation(dev);
+  $('evOverlay').textContent = fmtEV(dev) + ' EV';
+  $('pvStatus').textContent = st.key;
+  $('pvStatus').className = 'pv-pill ' + st.cls;
+}
+
+/* =====================================================================
+   13. HISTOGRAM (di-sample dari pixel preview hasil render)
+   ===================================================================== */
+function renderHistogram() {
+  const src = $('preview'), cv = $('histogram');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+  let data;
+  try { data = src.getContext('2d').getImageData(0, 0, src.width, src.height).data; }
+  catch (e) { return; }
+  const bins = new Uint32Array(64);
+  const sw = src.width, sh = src.height;
+  let total = 0;
+  for (let y = 0; y < sh; y += 4) {
+    for (let x = 0; x < sw; x += 4) {
+      const i = (y * sw + x) * 4;
+      const lum = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114) | 0;
+      bins[Math.min(63, lum >> 2)]++;
+      total++;
+    }
+  }
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  /* zona */
+  ctx.fillStyle = 'rgba(34,40,45,.6)'; ctx.fillRect(0, 0, W, H);
+  const z1 = W / 3, z2 = (W * 2) / 3;
+  ctx.fillStyle = 'rgba(127,183,227,.05)'; ctx.fillRect(0, 0, z1, H);
+  ctx.fillStyle = 'rgba(185,215,138,.05)'; ctx.fillRect(z1, 0, z1, H);
+  ctx.fillStyle = 'rgba(228,115,106,.05)'; ctx.fillRect(z2, 0, W - z2, H);
+  ctx.strokeStyle = 'rgba(120,130,140,.28)';
+  ctx.beginPath(); ctx.moveTo(z1, 0); ctx.lineTo(z1, H); ctx.moveTo(z2, 0); ctx.lineTo(z2, H); ctx.stroke();
+  let max = 1; for (let i = 0; i < 64; i++) max = Math.max(max, bins[i]);
+  const bw = W / 64;
+  for (let i = 0; i < 64; i++) {
+    const h = Math.pow(bins[i] / max, 0.72) * (H - 18);
+    const x = i * bw;
+    ctx.fillStyle = i < 21 ? '#5C9BC4' : i < 43 ? '#B9D78A' : '#E4A45A';
+    ctx.fillRect(x + .6, H - h - 14, bw - 1.2, h);
+  }
+  /* garis dasar & label 0 IRE */
+  ctx.strokeStyle = 'rgba(165,173,181,.5)';
+  ctx.beginPath(); ctx.moveTo(0, H - 13.5); ctx.lineTo(W, H - 13.5); ctx.stroke();
+  ctx.fillStyle = '#8A939B'; ctx.font = '10px monospace';
+  ctx.fillText('0', 4, H - 3); ctx.fillText('128', W / 2 - 12, H - 3); ctx.fillText('255', W - 26, H - 3);
+  /* clipping */
+  const shadowPct = (bins[0] / total) * 100, highPct = (bins[63] / total) * 100;
+  $('clipShadow').classList.toggle('on', shadowPct > 2.5);
+  $('clipHighlight').classList.toggle('on', highPct > 2.5);
+  const s = bins.slice(0, 21).reduce((a, b) => a + b, 0) / total * 100;
+  const m = bins.slice(21, 43).reduce((a, b) => a + b, 0) / total * 100;
+  const hgh = bins.slice(43).reduce((a, b) => a + b, 0) / total * 100;
+  $('histSummary').textContent = 'Shadows ' + s.toFixed(0) + '% · Midtones ' + m.toFixed(0) + '% · Highlights ' + hgh.toFixed(0) + '%';
+}
+
+/* =====================================================================
+   14. LEARNING FEEDBACK
+   ===================================================================== */
+function pushFeedback(kind, who, text) {
+  state.feedback.unshift({ kind, who, text });
+  state.feedback = state.feedback.slice(0, 5);
+  renderLearningFeedback();
+}
+function renderLearningFeedback() {
+  const box = $('feedbackList');
+  if (!state.feedback.length) {
+    box.innerHTML = '<div class="fb-item"><span class="ic">i</span><div><span class="who">Digital Exposure Lab</span>Ubah aperture, shutter, atau ISO untuk melihat feedback pembelajaran berdasarkan pengaturanmu saat ini.</div></div>';
+    return;
+  }
+  box.innerHTML = state.feedback.map(f =>
+    '<div class="fb-item' + (f.kind === 'exp' ? ' exp' : '') + '"><span class="ic">' + (f.kind === 'exp' ? 'EV' : '•') + '</span>' +
+    '<div><span class="who">' + f.who + '</span>' + f.text + '</div></div>'
+  ).join('');
+}
+function feedbackExposure() {
+  const dev = state.exposureDeviation;
+  let msg;
+  if (dev <= -0.5) msg = 'Foto mengalami underexposure sebesar ' + Math.abs(dev).toFixed(1) + ' stop. Pertimbangkan membuka aperture, memperlambat shutter, atau menaikkan ISO.';
+  else if (dev >= 0.5) msg = 'Foto mengalami overexposure sebesar ' + dev.toFixed(1) + ' stop. Pertimbangkan menutup aperture, mempercepat shutter, atau menurunkan ISO.';
+  else msg = 'Exposure seimbang (' + fmtEV(dev) + ' EV). Kombinasi aperture, shutter, dan ISO sudah tepat untuk kondisi cahaya ini.';
+  pushFeedback('exp', 'Exposure · ' + evStatus(dev).key, msg);
+}
+/* =====================================================================
+   15. FUNGSI PEMBARUAN UTAMA (satu sumber konsistensi)
+   ===================================================================== */
+function updateRangeFill(el) {
+  const min = +el.min, max = +el.max;
+  el.style.background = 'linear-gradient(90deg,#D9A441 ' + ((el.value - min) / (max - min)) * 100 + '%,#14171A ' + ((el.value - min) / (max - min)) * 100 + '%)';
+}
+function updateAll(hot) {
+  state.exposureDeviation = calculateExposure();
+  renderAperture(hot === 'ap');
+  renderShutter(hot === 'sh');
+  renderISO(hot === 'iso');
+  renderExposureTriangle();
+  renderExposureMeter();
+  renderStopSim();
+  renderLearningFeedback();
+  updateSceneLabel();
+  updateChallengeTargets();
+}
+function updateSceneLabel() {
+  const sc = SCENES[sceneIdx(state.sceneType)];
+  $('pvScene').textContent = 'SCENE ' + sc.id + ' — ' + sc.name;
+  document.querySelectorAll('#sceneRow .chip').forEach(c => c.classList.toggle('active', c.dataset.scene === state.sceneType));
+}
+
+/* =====================================================================
+   16. EXPOSURE STOP SIMULATOR
+   ===================================================================== */
+const STOP_SETS = {
+  ap: { vals: APERTURES.slice(2, 8), get: () => state.apertureValue, idx: (v) => apIndex(v), min: 0, max: APERTURES.length - 1, key: 'ap' },
+  sh: { vals: SHUTTERS.slice(2, 8).map(s => s.v), get: () => state.shutterValue, idx: (v) => shIndex(v), min: 0, max: SHUTTERS.length - 1, key: 'sh' },
+  iso: { vals: ISOS.slice(0, 6), get: () => state.isoValue, idx: (v) => isoIndex(v), min: 0, max: ISOS.length - 1, key: 'iso' }
+};
+const rowEV = {
+  ap: () => calculateApertureStops(state.apertureValue),
+  sh: () => calculateShutterStops(state.shutterValue),
+  iso: () => calculateISOStops(state.isoValue)
+};
+const rowRange = {
+  ap: [calculateApertureStops(22), calculateApertureStops(1.4)],
+  sh: [calculateShutterStops(1 / 4000), calculateShutterStops(8)],
+  iso: [0, Math.log2(128)]
+};
+function stopLabel(key, v) { return key === 'ap' ? fLabel(v) : key === 'sh' ? shLabel(v) : 'ISO ' + v; }
+function moveStop(key, dir) {
+  const S = STOP_SETS[key];
+  /* "+1 STOP" selalu berarti +1 EV (cahaya 2×): aperture bergerak ke angka f lebih kecil */
+  const step = key === 'ap' ? -dir : dir;
+  const i = S.idx(S.get());
+  const ni = clamp(i + step, S.min, S.max);
+  if (ni === i) return;
+  const vals = key === 'ap' ? APERTURES : key === 'sh' ? SHUTTERS.map(s => s.v) : ISOS;
+  const v = vals[ni];
+  if (key === 'ap') state.apertureValue = v;
+  else if (key === 'sh') state.shutterValue = v;
+  else state.isoValue = v;
+  const label = stopLabel(key, v);
+  const ev = (key === 'ap' ? calculateApertureStops(v) : key === 'sh' ? calculateShutterStops(v) : calculateISOStops(v));
+  const ratio = Math.pow(2, ev);
+  const arrow = dir > 0
+    ? '↑ Cahaya ' + (key === 'iso' ? 'SINYAL' : '') + ' DOUBLED — ' + label + ' = +1 EV (×2 cahaya)'
+    : '↓ Cahaya ' + (key === 'iso' ? 'SINYAL' : '') + ' HALVED — ' + label + ' = −1 EV (÷2 cahaya)';
+  $('' + key + 'LdArrow').textContent = arrow;
+  pushFeedback('set', (key === 'ap' ? 'Aperture Stop' : key === 'sh' ? 'Shutter Stop' : 'ISO Stop') + ' · ' + label,
+    dir > 0 ? 'Bergerak +1 stop: cahaya menjadi 2× lipat dari nilai sebelumnya.'
+            : 'Bergerak −1 stop: cahaya menjadi setengah (½×) dari nilai sebelumnya.');
+  updateAll(key === 'ap' ? 'ap' : key === 'sh' ? 'sh' : 'iso');
+  feedbackExposure();
+}
+function renderStopSim() {
+  ['ap', 'sh', 'iso'].forEach(key => {
+    const S = STOP_SETS[key], v = S.get();
+    $('' + key + 'StopVal').textContent = stopLabel(key, v);
+    /* ladder */
+    const lad = $('' + key + 'Ladder');
+    if (lad.dataset.built !== '1') {
+      lad.innerHTML = S.vals.map(x => '<span data-v="' + x + '">' + stopLabel(key, x) + '</span>').join('');
+      lad.dataset.built = '1';
+    }
+    lad.querySelectorAll('span').forEach(sp => sp.classList.toggle('on', Math.abs(parseFloat(sp.dataset.v) - v) < 1e-9));
+    /* ev chip per baris */
+    const ev = rowEV[key]();
+    const chip = $('' + key + 'StopEv');
+    chip.textContent = fmtEV(ev) + ' EV';
+    chip.className = 'ev-chip ' + (ev > 0.01 ? 'pos' : ev < -0.01 ? 'neg' : '');
+    /* bar cahaya */
+    const [mn, mx] = rowRange[key];
+    const pct = clamp(((ev - mn) / (mx - mn)) * 100, 1, 100);
+    $('' + key + 'LdBar').style.width = pct + '%';
+    $('' + key + 'LdRatio').textContent = Math.pow(2, ev).toFixed(2) + '×';
+    /* status tombol */
+    const i = S.idx(v);
+    $('' + key + 'StopMinus').disabled = key === 'ap' ? i >= S.max : i <= S.min;
+    $('' + key + 'StopPlus').disabled = key === 'ap' ? i <= S.min : i >= S.max;
+  });
+  const total = state.exposureDeviation;
+  $('stopTotalEv').textContent = fmtEV(total) + ' EV';
+  const lo = lightOffsetOf(state.lightingCondition);
+  $('stopSummaryTxt').textContent =
+    'Parameter kamera: ' + fLabel(state.apertureValue) + ' · ' + shLabel(state.shutterValue) + ' · ISO ' + state.isoValue +
+    ' = ' + fmtEV(settingsEV()) + ' EV. Ambient light ' + LIGHTINGS[lightIdx(state.lightingCondition)].name + ' = ' + fmtEV(lo) +
+    ' EV. Total deviation ' + fmtEV(total) + ' EV → ' + evStatus(total).key + '.';
+}
+function autoCompensate() {
+  const dev = state.exposureDeviation;
+  if (Math.abs(dev) <= 0.5) { $('compensateHint').textContent = 'Sudah seimbang (±0.5 EV) — tidak perlu kompensasi.'; return; }
+  const need = -dev; // perubahan EV yang dibutuhkan
+  const cands = [];
+  /* kandidat: shutter */
+  const curShStops = calculateShutterStops(state.shutterValue);
+  const wantSec = REF.sh * Math.pow(2, curShStops + need);
+  if (wantSec >= SHUTTERS[0].v * 0.98 && wantSec <= SHUTTERS[SHUTTERS.length - 1].v * 1.02) {
+    let best = 0; SHUTTERS.forEach((s, i) => { if (Math.abs(Math.log2(s.v / wantSec)) < Math.abs(Math.log2(SHUTTERS[best].v / wantSec))) best = i; });
+    cands.push({ key: 'sh', apply: () => state.shutterValue = SHUTTERS[best].v, score: Math.abs(calculateExposure({ apertureValue: state.apertureValue, shutterValue: SHUTTERS[best].v, isoValue: state.isoValue, lightingCondition: state.lightingCondition })) });
+  }
+  /* kandidat: iso */
+  const curIsoStops = calculateISOStops(state.isoValue);
+  const wantIso = 100 * Math.pow(2, curIsoStops + need);
+  if (wantIso >= 100 && wantIso <= 12800) {
+    let best = 0; ISOS.forEach((x, i) => { if (Math.abs(Math.log2(x / wantIso)) < Math.abs(Math.log2(ISOS[best] / wantIso))) best = i; });
+    cands.push({ key: 'iso', apply: () => state.isoValue = ISOS[best], score: Math.abs(calculateExposure({ apertureValue: state.apertureValue, shutterValue: state.shutterValue, isoValue: ISOS[best], lightingCondition: state.lightingCondition })) });
+  }
+  /* kandidat: aperture */
+  const curApStops = calculateApertureStops(state.apertureValue);
+  const wantAp = REF.ap / Math.pow(2, (curApStops + need) / 2);
+  if (wantAp >= 1.4 && wantAp <= 22) {
+    let best = 0; APERTURES.forEach((x, i) => { if (Math.abs(Math.log2(x / wantAp)) < Math.abs(Math.log2(APERTURES[best] / wantAp))) best = i; });
+    cands.push({ key: 'ap', apply: () => state.apertureValue = APERTURES[best], score: Math.abs(calculateExposure({ apertureValue: APERTURES[best], shutterValue: state.shutterValue, isoValue: state.isoValue, lightingCondition: state.lightingCondition })) });
+  }
+  if (!cands.length) { $('compensateHint').textContent = 'Tidak ada parameter dalam jarak satu langkah.'; return; }
+  cands.sort((a, b) => a.score - b.score);
+  const pick = cands[0];
+  if (pick.score >= Math.abs(dev)) { $('compensateHint').textContent = 'Tidak ada langkah tunggal yang memperbaiki.'; return; }
+  pick.apply();
+  updateAll(pick.key);
+  $('compensateHint').textContent = 'Dikompensasi lewat ' + (pick.key === 'sh' ? 'Shutter Speed' : pick.key === 'iso' ? 'ISO' : 'Aperture') + ' → exposure kembali ke ' + fmtEV(state.exposureDeviation) + ' EV.';
+  pushFeedback('exp', 'Kompensasi Stop', 'Perubahan 1 stop pada satu parameter dikompensasi parameter lain sehingga tingkat exposure tetap setara. Deviation kini ' + fmtEV(state.exposureDeviation) + ' EV.');
+}
+
+/* =====================================================================
+   17. EQUIVALENT EXPOSURE LAB
+   ===================================================================== */
+let eqCombos = [];
+function generateEquivalentSettings() {
+  const target = settingsEV(state);
+  const out = [];
+  const seen = new Set();
+  const push = (a, s, i) => {
+    const k = a + '|' + s.toFixed(6) + '|' + i;
+    if (seen.has(k)) return false;
+    seen.add(k); out.push({ apertureValue: a, shutterValue: s, isoValue: i });
+    return true;
+  };
+  for (const a of APERTURES) {
+    if (out.length >= 4) break;
+    const apS = calculateApertureStops(a);
+    for (const iso of ISOS) {
+      const isoS = calculateISOStops(iso);
+      const need = target - apS - isoS;
+      const want = REF.sh * Math.pow(2, need);
+      if (want < SHUTTERS[0].v) break;            /* terlalu cepat — ISO lebih tinggi justru mempercepat */
+      if (want > SHUTTERS[SHUTTERS.length - 1].v) continue; /* terlalu lambat — coba ISO lebih tinggi */
+      let best = 0;
+      SHUTTERS.forEach((s, i) => { if (Math.abs(Math.log2(s.v / want)) < Math.abs(Math.log2(SHUTTERS[best].v / want))) best = i; });
+      const s = SHUTTERS[best].v;
+      const dev = apS + calculateShutterStops(s) + isoS;
+      if (Math.abs(dev - target) <= 0.36 && push(a, s, iso)) break;
+    }
+  }
+  /* cadangan: kombinasi referensi agar selalu ada 4 preview */
+  const presets = [[2.8, 1 / 1000, 100], [5.6, 1 / 250, 100], [8, 1 / 125, 100], [8, 1 / 250, 200], [4, 1 / 500, 100], [11, 1 / 60, 400]];
+  for (const p of presets) { if (out.length >= 4) break; push(p[0], p[1], p[2]); }
+  eqCombos = out.slice(0, 4);
+  renderEquivalentLab();
+  $('eqBasis').textContent = 'Basis: ' + fLabel(state.apertureValue) + ' · ' + shLabel(state.shutterValue) + ' · ISO ' + state.isoValue +
+    ' → target ' + fmtEV(target) + ' EV (ambient ' + fmtEV(lightOffsetOf(state.lightingCondition)) + ' EV)';
+  pushFeedback('exp', 'Equivalent Exposure Lab', 'Empat kombinasi baru dihitung dari kesetaraan exposure terhadap pengaturan aktifmu.');
+}
+function characterOf(cfg) {
+  const blur = dofBlurPx(cfg.apertureValue, cfg.sceneType || state.sceneType);
+  const mbl = motionBlurLen(cfg.shutterValue);
+  const sig = noiseSigma(cfg.isoValue);
+  return {
+    dof: blur < 1.5 ? 'Deep (tajam semua)' : blur < 5 ? 'Medium' : 'Shallow (bokeh)',
+    blurPx: blur,
+    motion: mbl < 1.5 ? 'Frozen' : mbl < 14 ? 'Slight' : mbl < 60 ? 'Medium' : 'Strong trail',
+    noise: sig === 0 ? 'None' : sig < 4 ? 'Low' : sig < 9 ? 'Medium' : 'High'
+  };
+}
+function renderEquivalentLab() {
+  const grid = $('eqGrid');
+  const names = ['PRESET A', 'PRESET B', 'PRESET C', 'PRESET D'];
+  grid.innerHTML = eqCombos.map((c, i) => {
+    const cfg = Object.assign({}, state, c);
+    const dev = calculateExposure(cfg);
+    const ch = characterOf(cfg);
+    return '<div class="eq-card">' +
+      '<canvas width="360" height="225" data-eq="' + i + '" aria-label="Preview kombinasi ' + names[i] + '"></canvas>' +
+      '<div class="eq-body">' +
+      '<div class="eq-title">' + names[i] + '</div>' +
+      '<div class="eq-set">' + fLabel(c.apertureValue) + ' · ' + shLabel(c.shutterValue) + ' · ISO ' + c.isoValue + '</div>' +
+      '<div class="eq-stats">' +
+      '<div class="row"><span>Exposure</span><b>' + fmtEV(dev) + ' EV</b></div>' +
+      '<div class="row"><span>Noise</span><b>' + ch.noise + '</b></div>' +
+      '<div class="row"><span>Depth of Field</span><b>' + (ch.blurPx < 1.5 ? 'Deep' : ch.blurPx < 5 ? 'Medium' : 'Shallow') + '</b></div>' +
+      '<div class="row"><span>Motion</span><b>' + ch.motion + '</b></div>' +
+      '</div>' +
+      '<div class="hint" style="font-size:11px">DoF ' + ch.blurPx.toFixed(1) + 'px · trail ' + Math.round(motionBlurLen(c.shutterValue)) + 'px</div>' +
+      '<button class="btn" data-use="' + i + '">Use in Simulator</button>' +
+      '</div></div>';
+  }).join('');
+  /* render preview tiap kombinasi (offscreen, sekali per pembaruan) */
+  grid.querySelectorAll('canvas').forEach(cv => {
+    const c = eqCombos[+cv.dataset.eq];
+    renderSceneImage(cv, Object.assign({}, state, c), 0.8);
+  });
+  grid.querySelectorAll('[data-use]').forEach(b => b.addEventListener('click', () => {
+    const c = eqCombos[+b.dataset.use];
+    state.apertureValue = c.apertureValue; state.shutterValue = c.shutterValue; state.isoValue = c.isoValue;
+    switchView('simulator');
+    updateAll();
+    feedbackExposure();
+    pushFeedback('set', 'Equivalent Preset', 'Menggunakan ' + fLabel(c.apertureValue) + ' · ' + shLabel(c.shutterValue) + ' · ISO ' + c.isoValue + ' pada simulator utama.');
+  }));
+}
+function renderProductLabNote() { /* placeholder agar nama fungsi sesuai spesifikasi */ }
+
+/* =====================================================================
+   18. STUDIO PRODUCT — BEST SETTINGS
+   ===================================================================== */
+function applyBestProductSettings() {
+  state.sceneType = 'E';
+  state.lightingCondition = 'studio';
+  state.tripodMode = true;
+  state.isoValue = 100;
+  state.apertureValue = 8;
+  /* seimbangkan shutter terhadap ambient studio (-1 EV) */
+  const need = -(calculateApertureStops(8) + calculateISOStops(100) + lightOffsetOf('studio'));
+  const want = REF.sh * Math.pow(2, need);
+  let best = 0;
+  SHUTTERS.forEach((s, i) => { if (Math.abs(Math.log2(s.v / want)) < Math.abs(Math.log2(SHUTTERS[best].v / want))) best = i; });
+  state.shutterValue = SHUTTERS[best].v;
+  syncControls();
+  $('lightingSelect').value = 'studio';
+  $('bestProductNote').textContent = 'ISO 100 (noise minimum) · f/8 (ketajaman lebar) · ' + shLabel(state.shutterValue) + ' (seimbang) · TRIPOD.';
+  updateAll();
+  feedbackExposure();
+  pushFeedback('set', 'Studio Product Lab', 'Rekomendasi diterapkan: ISO 100 untuk detail bersih, f/8 agar seluruh produk tajam, rana disesuaikan karena kamera dan produk diam di tripod.');
+}
+/* =====================================================================
+   19. CAPTURE PHOTO & GALLERY
+   ===================================================================== */
+function shutterCurtainAnimation() {
+  const svg = $('shutterSvg');
+  if (!svg.dataset.built) return;
+  const top = svg.querySelector('#shTop'), bot = svg.querySelector('#shBot');
+  const start = performance.now();
+  const base = clamp((Math.log2(state.shutterValue) - Math.log2(1 / 4000)) / (Math.log2(8) - Math.log2(1 / 4000)), 0, 1);
+  const open0 = 4 + base * 46;
+  (function step(now) {
+    const p = (now - start) / 420;
+    let open;
+    if (p < 0.35) open = lerp(open0, 2, p / 0.35);            /* tirai menutup */
+    else if (p < 0.5) open = 2;
+    else open = lerp(2, open0, clamp((p - 0.5) / 0.5, 0, 1));  /* tirai membuka */
+    top.setAttribute('height', open.toFixed(1));
+    bot.setAttribute('y', (118 - open).toFixed(1));
+    bot.setAttribute('height', open.toFixed(1));
+    if (p < 1) requestAnimationFrame(step);
+    else drawShutterSVG();
+  })(start);
+}
+function capturePhoto(opts) {
+  opts = opts || {};
+  const cv = $('preview');
+  const flash = $('flash');
+  flash.classList.remove('go'); void flash.offsetWidth; flash.classList.add('go');
+  shutterCurtainAnimation();
+  let url;
+  try { url = cv.toDataURL('image/png'); }
+  catch (e) { url = ''; }
+  const photo = {
+    id: 'p' + Date.now() + Math.floor(Math.random() * 999),
+    url: url,
+    apertureValue: state.apertureValue,
+    shutterValue: state.shutterValue,
+    isoValue: state.isoValue,
+    sceneType: state.sceneType,
+    lightingCondition: state.lightingCondition,
+    tripodMode: state.tripodMode,
+    exposureDeviation: +state.exposureDeviation.toFixed(3),
+    date: new Date().toLocaleString('id-ID')
+  };
+  state.capturedPhotos.unshift(photo);
+  if (state.capturedPhotos.length > 16) state.capturedPhotos.pop();
+  renderGallery();
+  pushFeedback('set', 'Capture', 'Foto disimpan: ' + fLabel(photo.apertureValue) + ' · ' + shLabel(photo.shutterValue) +
+    ' · ISO ' + photo.isoValue + ' · ' + fmtEV(photo.exposureDeviation) + ' EV · ' + SCENES[sceneIdx(photo.sceneType)].name + '.');
+  if (state.activeChallenge) evaluateChallenge(state.activeChallenge, photo);
+  return photo;
+}
+function renderGallery() {
+  const grid = $('galleryGrid');
+  $('shotCounter').textContent = state.capturedPhotos.length + ' photo' + (state.capturedPhotos.length === 1 ? '' : 's');
+  $('galleryEmpty').style.display = state.capturedPhotos.length ? 'none' : 'block';
+  grid.innerHTML = state.capturedPhotos.map(p => {
+    const sel = state.compareSel.includes(p.id);
+    return '<div class="photo-card' + (sel ? ' selected' : '') + '" data-id="' + p.id + '">' +
+      '<img src="' + p.url + '" alt="Foto ' + SCENES[sceneIdx(p.sceneType)].name + ' ' + fLabel(p.apertureValue) + '" data-act="view">' +
+      '<div class="photo-meta"><b>' + fLabel(p.apertureValue) + ' · ' + shLabel(p.shutterValue) + ' · ISO ' + p.isoValue + '</b><br>' +
+      fmtEV(p.exposureDeviation) + ' EV · ' + SCENES[sceneIdx(p.sceneType)].name + '<br>' + p.date + '</div>' +
+      '<div class="photo-actions">' +
+      '<button data-act="view">View</button>' +
+      '<button data-act="cmp">' + (sel ? '✓ Sel' : 'Compare') + '</button>' +
+      '<button data-act="del">Del</button>' +
+      '<a class="btn" data-act="dl" download="digital-exposure-lab-' + p.id + '.png" href="' + p.url + '" style="flex:1;min-width:34px;text-align:center;text-decoration:none;font-size:11px;padding:6px 4px;letter-spacing:.06em;border-radius:7px;border:1px solid var(--line);background:#242B31;cursor:pointer;text-transform:uppercase">⤓</a>' +
+      '</div></div>';
+  }).join('');
+  $('compareCount').textContent = state.compareSel.length + ' / 2 selected for compare';
+  $('btnCompare').disabled = state.compareSel.length !== 2;
+  $('btnClearCompare').disabled = state.compareSel.length === 0;
+}
+function findPhoto(id) { return state.capturedPhotos.find(p => p.id === id); }
+function openPhoto(id) {
+  const p = findPhoto(id); if (!p) return;
+  $('photoViewer').src = p.url;
+  $('photoDownload').href = p.url;
+  $('photoDownload').setAttribute('download', 'digital-exposure-lab-' + p.id + '.png');
+  $('photoMeta').innerHTML =
+    '<tr><th>Aperture</th><td>' + fLabel(p.apertureValue) + '</td></tr>' +
+    '<tr><th>Shutter Speed</th><td>' + shLabel(p.shutterValue) + ' detik</td></tr>' +
+    '<tr><th>ISO</th><td>' + p.isoValue + '</td></tr>' +
+    '<tr><th>Exposure Deviation</th><td>' + fmtEV(p.exposureDeviation) + ' EV — ' + evStatus(p.exposureDeviation).key + '</td></tr>' +
+    '<tr><th>Scene</th><td>SCENE ' + p.sceneType + ' — ' + SCENES[sceneIdx(p.sceneType)].name + '</td></tr>' +
+    '<tr><th>Lighting</th><td>' + LIGHTINGS[lightIdx(p.lightingCondition)].name + ' (' + fmtEV(lightOffsetOf(p.lightingCondition)) + ' EV)</td></tr>' +
+    '<tr><th>Support</th><td>' + (p.tripodMode ? 'TRIPOD' : 'HANDHELD') + '</td></tr>' +
+    '<tr><th>DoF / Motion / Noise</th><td>' + (() => { const c = characterOf(p); return c.dof + ' · ' + c.motion + ' · ' + c.noise; })() + '</td></tr>' +
+    '<tr><th>Captured</th><td>' + p.date + '</td></tr>';
+  $('photoDelete').dataset.id = p.id;
+  openModal('photoModal');
+}
+function deletePhoto(id) {
+  state.capturedPhotos = state.capturedPhotos.filter(p => p.id !== id);
+  state.compareSel = state.compareSel.filter(x => x !== id);
+  renderGallery(); closeModal('photoModal');
+}
+function toggleCompare(id) {
+  const i = state.compareSel.indexOf(id);
+  if (i >= 0) state.compareSel.splice(i, 1);
+  else { if (state.compareSel.length >= 2) state.compareSel.shift(); state.compareSel.push(id); }
+  renderGallery();
+}
+function openCompare() {
+  if (state.compareSel.length !== 2) return;
+  const [a, b] = state.compareSel.map(findPhoto);
+  if (!a || !b) return;
+  const rows = [
+    ['Aperture', fLabel(a.apertureValue), fLabel(b.apertureValue), a.apertureValue !== b.apertureValue],
+    ['Shutter Speed', shLabel(a.shutterValue), shLabel(b.shutterValue), a.shutterValue !== b.shutterValue],
+    ['ISO', a.isoValue, b.isoValue, a.isoValue !== b.isoValue],
+    ['Exposure', fmtEV(a.exposureDeviation) + ' EV', fmtEV(b.exposureDeviation) + ' EV', Math.abs(a.exposureDeviation - b.exposureDeviation) > 0.05],
+    ['Depth of Field', characterOf(a).dof, characterOf(b).dof, characterOf(a).dof !== characterOf(b).dof],
+    ['Motion Blur', characterOf(a).motion, characterOf(b).motion, characterOf(a).motion !== characterOf(b).motion],
+    ['Noise', characterOf(a).noise, characterOf(b).noise, characterOf(a).noise !== characterOf(b).noise],
+    ['Scene', SCENES[sceneIdx(a.sceneType)].name, SCENES[sceneIdx(b.sceneType)].name, a.sceneType !== b.sceneType],
+    ['Lighting', LIGHTINGS[lightIdx(a.lightingCondition)].name, LIGHTINGS[lightIdx(b.lightingCondition)].name, a.lightingCondition !== b.lightingCondition]
+  ];
+  $('cmpGrid').innerHTML =
+    '<div><img class="viewer-img" src="' + a.url + '" alt="Foto pertama"><div class="eq-title" style="margin-top:8px">PHOTO 1</div></div>' +
+    '<div><img class="viewer-img" src="' + b.url + '" alt="Foto kedua"><div class="eq-title" style="margin-top:8px">PHOTO 2</div></div>';
+  $('cmpDiff').innerHTML = '<table class="meta-table">' +
+    '<tr><th>Property</th><td>Photo 1</td><td>Photo 2</td></tr>' +
+    rows.map(r => '<tr><th>' + r[0] + '</th><td' + (r[3] ? ' class="diff"' : '') + '>' + r[1] + '</td><td' + (r[3] ? ' class="diff"' : '') + '>' + r[2] + '</td></tr>').join('') +
+    '</table><p class="hint" style="margin-top:10px">Baris berwarna emas menunjukkan perbedaan pengaturan/karakter antara kedua foto.</p>';
+  openModal('compareModal');
+}
+
+/* =====================================================================
+   20. CHALLENGE MODE
+   ===================================================================== */
+const CHALLENGES = [
+  {
+    id: 'C1', num: 'CHALLENGE 01', title: 'BOKEH MASTER',
+    goal: 'Membuat foto portrait dengan background blur.',
+    hint: 'Gunakan scene Portrait, buka aperture selebar mungkin, lalu seimbangkan exposure.',
+    preset: { sceneType: 'A', lightingCondition: 'shade', tripodMode: false },
+    criteria: [
+      { label: 'Scene Portrait', test: () => state.sceneType === 'A', actual: () => 'SCENE ' + state.sceneType },
+      { label: 'Aperture maksimal f/2.8', test: () => state.apertureValue <= 2.8, actual: () => fLabel(state.apertureValue) },
+      { label: 'Exposure −0.5 … +0.5 EV', test: () => Math.abs(state.exposureDeviation) <= 0.5, actual: () => fmtEV(state.exposureDeviation) + ' EV' }
+    ]
+  },
+  {
+    id: 'C2', num: 'CHALLENGE 02', title: 'FREEZE THE MOMENT',
+    goal: 'Membekukan objek bergerak dengan tepat.',
+    hint: 'Gunakan scene Action dengan shutter 1/500 detik atau lebih cepat, lalu ganti cahaya/ISO agar seimbang.',
+    preset: { sceneType: 'B', lightingCondition: 'sun', tripodMode: false },
+    criteria: [
+      { label: 'Scene Action', test: () => state.sceneType === 'B', actual: () => 'SCENE ' + state.sceneType },
+      { label: 'Shutter 1/500s atau lebih cepat', test: () => state.shutterValue <= 1 / 500, actual: () => shLabel(state.shutterValue) },
+      { label: 'Exposure −0.5 … +0.5 EV', test: () => Math.abs(state.exposureDeviation) <= 0.5, actual: () => fmtEV(state.exposureDeviation) + ' EV' }
+    ]
+  },
+  {
+    id: 'C3', num: 'CHALLENGE 03', title: 'DEEP FOCUS',
+    goal: 'Membuat landscape dengan area ketajaman luas.',
+    hint: 'Gunakan scene Landscape dengan aperture f/8–f/16.',
+    preset: { sceneType: 'C', lightingCondition: 'sun', tripodMode: false },
+    criteria: [
+      { label: 'Scene Landscape', test: () => state.sceneType === 'C', actual: () => 'SCENE ' + state.sceneType },
+      { label: 'Aperture f/8 – f/16', test: () => state.apertureValue >= 8 && state.apertureValue <= 16, actual: () => fLabel(state.apertureValue) },
+      { label: 'Exposure −0.5 … +0.5 EV', test: () => Math.abs(state.exposureDeviation) <= 0.5, actual: () => fmtEV(state.exposureDeviation) + ' EV' }
+    ]
+  },
+  {
+    id: 'C4', num: 'CHALLENGE 04', title: 'PRODUCT PHOTOGRAPHY',
+    goal: 'Membuat foto produk yang bersih dan tajam.',
+    hint: 'Gunakan BEST PRODUCT SETTINGS pada menu Experiment sebagai titik awal.',
+    preset: { sceneType: 'E', lightingCondition: 'studio', tripodMode: true },
+    criteria: [
+      { label: 'Scene Product + Studio Lighting', test: () => state.sceneType === 'E' && state.lightingCondition === 'studio', actual: () => SCENES[sceneIdx(state.sceneType)].name + ' · ' + LIGHTINGS[lightIdx(state.lightingCondition)].name },
+      { label: 'ISO 100 atau 200', test: () => state.isoValue <= 200, actual: () => 'ISO ' + state.isoValue },
+      { label: 'Aperture f/8 – f/11', test: () => state.apertureValue >= 8 && state.apertureValue <= 11, actual: () => fLabel(state.apertureValue) },
+      { label: 'Tripod aktif', test: () => state.tripodMode === true, actual: () => state.tripodMode ? 'TRIPOD' : 'HANDHELD' },
+      { label: 'Exposure −0.5 … +0.5 EV', test: () => Math.abs(state.exposureDeviation) <= 0.5, actual: () => fmtEV(state.exposureDeviation) + ' EV' }
+    ]
+  }
+];
+function renderChallenges() {
+  $('chGrid').innerHTML = CHALLENGES.map(c => {
+    const done = state.completedChallenges.has(c.id);
+    const active = state.activeChallenge === c.id;
+    return '<div class="ch-card' + (active ? ' active' : '') + (done ? ' done' : '') + '" data-ch="' + c.id + '">' +
+      '<div class="ch-num">' + c.num + (done ? ' · ✓ COMPLETED' : active ? ' · ACTIVE' : '') + '</div>' +
+      '<div class="ch-title">' + c.title + '</div>' +
+      '<div class="ch-goal">' + c.goal + '</div>' +
+      '<ul class="ch-targets">' + c.criteria.map((cr, i) => '<li data-cr="' + i + '"><span class="dot"></span>' + cr.label + '</li>').join('') + '</ul>' +
+      '<div class="hint" style="margin-bottom:11px">💡 ' + c.hint + '</div>' +
+      '<div class="ch-actions">' +
+      '<button class="btn' + (active ? ' btn-green' : '') + '" data-chact="start">▶ Start</button>' +
+      '<button class="btn btn-primary" data-chact="shoot">◉ Take Photo</button>' +
+      '</div></div>';
+  }).join('');
+  updateChallengeTargets();
+  renderChallengeProgress();
+}
+function updateChallengeTargets() {
+  CHALLENGES.forEach(c => {
+    const card = $('chGrid').querySelector('[data-ch="' + c.id + '"]');
+    if (!card) return;
+    card.querySelectorAll('[data-cr]').forEach(li => {
+      const cr = c.criteria[+li.dataset.cr];
+      li.classList.toggle('met', !!cr.test());
+    });
+  });
+  renderChallengeProgress();
+}
+function renderChallengeProgress() {
+  const n = state.completedChallenges.size;
+  $('progText').textContent = n + ' / 4 completed';
+  $('progDots').querySelectorAll('i').forEach((el, i) => el.classList.toggle('on', i < n));
+}
+function startChallenge(id) {
+  const c = CHALLENGES.find(x => x.id === id); if (!c) return;
+  state.activeChallenge = id;
+  Object.assign(state, c.preset);
+  syncControls();
+  $('lightingSelect').value = state.lightingCondition;
+  renderChallenges();
+  updateAll();
+  pushFeedback('set', c.num + ' · ' + c.title, 'Tantangan dimulai. ' + c.hint);
+  switchView('simulator');
+}
+function evaluateChallenge(id, photo) {
+  const c = CHALLENGES.find(x => x.id === id); if (!c) return null;
+  const results = c.criteria.map(cr => ({ label: cr.label, pass: !!cr.test(), actual: cr.actual() }));
+  const passed = results.every(r => r.pass);
+  const box = $('chResult');
+  box.className = 'ch-result show ' + (passed ? 'pass' : 'fail');
+  box.innerHTML = '<b>' + c.num + ' · ' + c.title + ' — ' + (passed ? 'PASSED ✓' : 'BELUM LULUS ✗') + '</b><br>' +
+    results.map(r => (r.pass ? '✓' : '✗') + ' ' + r.label + ' <b>[' + r.actual + ']</b>').join('<br>') +
+    (passed
+      ? '<br><br>Semua target terpenuhi. ' + (photo ? 'Foto tersimpan di galeri.' : '') + ' Kamu berhasil mengontrol exposure triangle untuk tujuan visual ini.'
+      : '<br><br>Periksa kembali baris bertanda ✗, lalu sesuaikan pengaturan dan ambil foto lagi.');
+  if (passed) {
+    state.completedChallenges.add(id);
+    renderChallenges();
+    pushFeedback('exp', c.num + ' · ' + c.title, 'Tantangan selesai! Semua kriteria terpenuhi.');
+  } else {
+    updateChallengeTargets();
+  }
+  switchView('challenge');
+  return passed;
+}
+/* =====================================================================
+   21. LEARNING CENTER
+   ===================================================================== */
+const TOPICS = [
+  { k: 'A', nav: 'What is Exposure?', title: 'Apa Itu Exposure?', viz: 'exposure',
+    def: 'Exposure adalah banyaknya cahaya yang diterima sensor kamera saat memotret.',
+    body: ['Exposure ditentukan oleh tiga hal sekaligus: aperture (bukaan lensa), shutter speed (durasi rana), dan ISO (penguatan sinyal). Ketiganya disebut Exposure Triangle.',
+      'Kalau terlalu banyak cahaya → foto terlalu terang (overexposed). Kalau terlalu sedikit → foto terlalu gelap (underexposed). Tujuan kita adalah mencapai exposure yang seimbang (balanced).'],
+    ex: ['f/8 · 1/125 · ISO 100', '0 EV = balanced'],
+    impact: 'Exposure yang salah membuat detail hilang: highlight menjadi putih polos atau shadow menjadi hitam pekat.',
+    concl: 'Exposure = hasil kerja sama aperture, shutter, dan ISO terhadap cahaya yang tersedia.' },
+  { k: 'B', nav: 'What is Aperture?', title: 'Apa Itu Aperture (Diafragma)?', viz: 'aperture',
+    def: 'Aperture adalah bukaan di dalam lensa yang mengatur jumlah cahaya menuju sensor.',
+    body: ['Aperture dinyatakan dalam angka f-stop: f/1.4, f/2, f/2.8, …, f/22. Angka f kecil berarti bukaan besar (cahaya banyak), angka f besar berarti bukaan kecil (cahaya sedikit).',
+      'Aperture juga mengontrol Depth of Field — seberapa banyak area foto yang terlihat tajam.'],
+    ex: ['f/1.4 — bukaan lebar, banyak cahaya', 'f/16 — bukaan sempit, sedikit cahaya'],
+    impact: 'Membuka aperture membuat background blur (bokeh); menutupnya membuat seluruh pemandangan tajam.',
+    concl: 'Aperture mengontrol dua hal sekaligus: jumlah cahaya dan kedalaman ketajaman.' },
+  { k: 'C', nav: 'Understanding F-Stop', title: 'Memahami Angka F-Stop', viz: 'fstop',
+    def: 'F-stop adalah nilai yang menunjukkan seberapa sempit bukaan diafragma.',
+    body: ['Setiap lonjakan satu stop (f/2.8 → f/4 → f/5.6 → f/8 …) mengurangi cahaya menjadi setengahnya. Setiap turunan satu stop menggandakan cahaya.',
+      'Angkanya membingungkan karena bersifat kebalikan: makin besar angka f, makin kecil bukaan.'],
+    ex: ['f/2.8 → f/4 = −1 stop (½ cahaya)', 'f/5.6 → f/4 = +1 stop (2× cahaya)'],
+    impact: 'Setiap langkah f-stop memengaruhi exposure dan DoF secara bersamaan.',
+    concl: 'F-stop = skala logaritmik: satu langkah selalu berarti dua kali atau setengah cahaya.' },
+  { k: 'D', nav: 'Depth of Field', title: 'Depth of Field (Kedalaman Bidang)', viz: 'dof',
+    def: 'Depth of Field adalah jarak area yang terlihat tajam dari depan sampai belakang objek.',
+    body: ['Aperture lebar (f/1.4–f/2.8) → DoF dangkal: subjek tajam, background blur. Cocok untuk portrait.',
+      'Aperture sempit (f/8–f/16) → DoF dalam: hampir semua tajam. Cocok untuk landscape dan produk.'],
+    ex: ['Portrait: f/2 — subjek tajam, taman blur', 'Landscape: f/11 — gunung sampai depan tajam'],
+    impact: 'DoF memisahkan subjek dari latar sehingga foto terlihat profesional dan fokus pada cerita utama.',
+    concl: 'Makin lebar bukaan → makin dangkal DoF. Makin sempit bukaan → makin dalam DoF.' },
+  { k: 'E', nav: 'What is Shutter Speed?', title: 'Apa Itu Shutter Speed?', viz: 'shutter',
+    def: 'Shutter speed adalah durasi sensor terbuka menerima cahaya.',
+    body: ['Dinyatakan dalam detik: 1/4000 sangat cepat, 8" (8 detik) sangat lambat. Rana cepat menerima sedikit cahaya; rana lambat menerima banyak cahaya.',
+      'Durasi ini juga menentukan apakah gerakan dibekukan atau diaburkan.'],
+    ex: ['1/1000 — beku, sedikit cahaya', '1/15 — banyak cahaya, gerakan blur'],
+    impact: 'Shutter menghubungkan waktu dengan cahaya: dua kali durasi = dua kali cahaya = +1 stop.',
+    concl: 'Shutter speed mengontrol durasi cahaya dan karakter gerakan dalam foto.' },
+  { k: 'F', nav: 'Motion Blur & Freeze', title: 'Motion Blur dan Freeze Motion', viz: 'motion',
+    def: 'Motion blur adalah jejak kabur akibat objek bergerak saat rana masih terbuka.',
+    body: ['Untuk membekukan gerakan (freeze), gunakan rana cepat: 1/500 atau 1/1000 detik.',
+      'Untuk menampilkan gerakan (jejak cahaya mobil, air terjun), gunakan rana lambat 1/30 ke bawah — dan wajib memakai tripod agar foto tidak goyang.'],
+    ex: ['Lari atlet: 1/1000 beku', 'Light trail mobil: 2 detik + tripod'],
+    impact: 'Rana lambat tanpa tripod = camera shake (foto goyang), bukan motion blur yang artistik.',
+    concl: 'Kecepatan rana memilih: momen beku atau cerita gerakan.' },
+  { k: 'G', nav: 'What is ISO?', title: 'Apa Itu ISO?', viz: 'iso',
+    def: 'ISO adalah tingkat penguatan sinyal yang diterima sensor kamera.',
+    body: ['ISO bukan jumlah cahaya fisik yang masuk lewat lensa — lensa tidak berubah. Yang berubah adalah seberapa kuat sinyal yang sudah ada diperkuat.',
+      'ISO tinggi membuat foto terlihat lebih terang pada pengaturan lain yang sama, tetapi ikut memperkuat gangguan sinyal (noise).'],
+    ex: ['ISO 100 — penguatan rendah, bersih', 'ISO 6400 — penguatan tinggi, terang tapi noise'],
+    impact: 'Naik ISO 1 langkah = menambah +1 EV, sama seperti membuka aperture 1 stop.',
+    concl: 'ISO adalah "volume" sinyal sensor, bukan "cahaya" yang masuk.' },
+  { k: 'H', nav: 'Digital Noise', title: 'Digital Noise (Grain)', viz: 'noise',
+    def: 'Digital noise adalah butiran kasar pada foto akibat penguatan sinyal yang tinggi.',
+    body: ['Noise terlihat sebagai bintik luminance (terang-gelap) dan sedikit bintik warna (chroma).',
+      'Noise paling terlihat pada area gelap/shadow dan pada ISO tinggi, karena di sana sinyalnya lemah sehingga gangguan ikut terangkat.'],
+    ex: ['ISO 100 → shadow halus', 'ISO 6400 → shadow berbintik'],
+    impact: 'Noise mengurangi detail dan akurasi warna; karena itu fotografi produk memakai ISO 100.',
+    concl: 'Naikkan ISO hanya saat cahaya benar-benar kurang — konsekuensinya adalah noise.' },
+  { k: 'I', nav: 'Understanding Stops', title: 'Memahami Exposure Stops', viz: 'stops',
+    def: 'Satu stop berarti cahaya menjadi dua kali lipat (atau setengahnya).',
+    body: ['Semua kontrol kamera bergerak dalam skala stop. Menaikkan aperture 1 stop, menurunkan shutter 1 stop, dan menaikkan ISO 1 stop semuanya mengubah exposure sebesar ±1 EV.',
+      'Karena logaritmik, perubahan kecil pada angka = perubahan besar pada cahaya.'],
+    ex: ['1/125 → 1/250 = −1 EV', 'ISO 100 → 200 = +1 EV'],
+    impact: 'Memahami stop membuat kamu bisa memperkirakan pengaturan tanpa trial-and-error.',
+    concl: '1 stop = ×2 atau ÷2 cahaya. Semua penyeimbangan exposure dihitung dalam stop.' },
+  { k: 'J', nav: 'Exposure Compensation', title: 'Exposure Compensation', viz: 'comp',
+    def: 'Exposure compensation adalah cara menggeser meteran exposure agar hasil sesuai keinginan.',
+    body: ['Meter kamera menargetkan 0 EV. Pada scene sangat terang (salju, langit), meter bisa salah mengira — hasilnya underexposed. Kompensasi +1 EV membuat foto lebih terang.',
+      'Pada subjek gelap dominan, kompensasi −1 EV mencegah foto terlalu terang.'],
+    ex: ['Putih salju: +1 EV', 'Siluet gelap: −1 EV'],
+    impact: 'Kompensasi dilakukan dengan mengubah salah satu stop: aperture, shutter, atau ISO.',
+    concl: 'Meter memberi panduan, kreativitas memutuskan — 0 EV bukan selalu yang terbaik.' },
+  { k: 'K', nav: 'Equivalent Exposure', title: 'Equivalent Exposure', viz: 'equiv',
+    def: 'Beberapa kombinasi pengaturan dapat menghasilkan kecerahan (exposure) yang setara.',
+    body: ['f/5.6 · 1/250 · ISO 100 dan f/8 · 1/125 · ISO 100 sama-sama 0 EV — kecerahannya setara.',
+      'Tetapi karakternya berbeda: yang pertama DoF lebih dangkal, yang kedua gerakan lebih blur. Itulah kekuatan kreatif exposure triangle.'],
+    ex: ['f/2.8 · 1/1000 · ISO 100', 'f/8 · 1/125 · ISO 100'],
+    impact: 'Fotografer memilih kombinasi berdasarkan cerita yang ingin ditonjolkan, bukan sekadar angka 0 EV.',
+    concl: 'Same exposure ≠ same photograph. Kecerahan sama, karakter bisa sangat berbeda.' },
+  { k: 'L', nav: 'Triangle in Real Situations', title: 'Exposure Triangle dalam Situasi Nyata', viz: 'real',
+    def: 'Di lapangan, kamu selalu menyeimbangkan tiga parameter terhadap cahaya yang ada.',
+    body: ['Portrait siang hari: f/2 · 1/2000 · ISO 100 — DoF dangkal, gerakan beku.',
+      'Olahraga indoor: f/2.8 · 1/500 · ISO 1600 — rana cepat, ISO tinggi demi cahaya. Malam dengan tripod: f/8 · 4 detik · ISO 100 — rana lambat menggantikan ISO tinggi agar bersih.'],
+    ex: ['Siang: f/5.6 · 1/500 · ISO 100', 'Malam + tripod: f/8 · 4" · ISO 100'],
+    impact: 'Kunci utama: tentukan dulu prioritas visual (blur? beku? tajam?), lalu isi dua parameter lain untuk menyeimbangkan.',
+    concl: 'Selalu mulai dari cahaya & tujuan foto, lalu seimbangkan ketiga sisi segitiga.' }
+];
+function renderLearnNav() {
+  $('learnNav').innerHTML = TOPICS.map((t, i) =>
+    '<button data-topic="' + i + '"' + (i === 0 ? ' class="active"' : '') + '><span class="lk">' + t.k + '</span>' + t.nav + '</button>').join('');
+}
+function renderLearnTopic(i) {
+  const t = TOPICS[i];
+  document.querySelectorAll('#learnNav button').forEach(b => b.classList.toggle('active', +b.dataset.topic === i));
+  $('learnBody').innerHTML =
+    '<div class="lkicker">Learning Center · Materi ' + t.k + '</div>' +
+    '<h3>' + t.title + '</h3>' +
+    '<div class="learn-block"><h4>Definisi</h4><p><b class="accent">' + t.def + '</b></p></div>' +
+    '<div class="learn-block"><h4>Penjelasan</h4>' + t.body.map(p => '<p style="margin-bottom:8px">' + p + '</p>').join('') + '</div>' +
+    '<div class="learn-viz"><div class="lkicker" style="margin-bottom:8px">Visualisasi Interaktif</div>' +
+    '<canvas id="learnCanvas" width="660" height="230" aria-label="Visualisasi materi ' + t.title + '"></canvas></div>' +
+    '<div class="learn-block"><h4>Contoh Nilai Kamera</h4><div class="example-chips">' + t.ex.map(e => '<span>' + e + '</span>').join('') + '</div></div>' +
+    '<div class="learn-block"><h4>Dampak Terhadap Hasil Foto</h4><p>' + t.impact + '</p></div>' +
+    '<div class="conclusion"><b>Kesimpulan:</b> ' + t.concl + '</div>';
+  drawLearnViz(t.viz, $('learnCanvas'));
+}
+function drawLearnViz(key, cv) {
+  if (!cv) return;
+  const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = '#12151A'; ctx.fillRect(0, 0, W, H);
+  ctx.font = '12px system-ui'; ctx.textBaseline = 'middle';
+  const frame = (x, w, label, fill) => {
+    ctx.fillStyle = '#1B2026'; ctx.fillRect(x, 34, w, H - 74);
+    if (fill) fill(x, 40, w, H - 86);
+    ctx.fillStyle = '#A5ADB5'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(label, x + w / 2, H - 16); ctx.textAlign = 'left';
+  };
+  const miniScene = (x, y, w, h, gain, blurPx, noise) => {
+    const img = ctx.getImageData(x, y, w, h), d = img.data;
+    for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) {
+      const i = (yy * w + xx) * 4;
+      let base = 40 + (yy / h) * 60 + (xx > w * 0.6 ? 70 : 0);
+      let R = base, G = base + 8, B = base + 18;
+      let lr = SRGB2LIN[R | 0] * gain, lg = SRGB2LIN[G | 0] * gain, lb = SRGB2LIN[B | 0] * gain;
+      R = LIN2SRGB[Math.min(1024, (lr * 1024) | 0)]; G = LIN2SRGB[Math.min(1024, (lg * 1024) | 0)]; B = LIN2SRGB[Math.min(1024, (lb * 1024) | 0)];
+      if (noise) { const n = (rnd() - .5) * 2 * noise; R += n; G += n; B += n; }
+      d[i] = clamp(R, 0, 255); d[i + 1] = clamp(G, 0, 255); d[i + 2] = clamp(B, 0, 255); d[i + 3] = 255;
+    }
+    ctx.putImageData(img, x, y);
+    /* subjek + latar */
+    ctx.fillStyle = 'rgba(217,164,65,.9)'; ctx.beginPath(); ctx.arc(x + w * 0.32, y + h * 0.55, 14, 0, 6.2832); ctx.fill();
+    ctx.fillStyle = 'rgba(127,183,227,.75)';
+    if (blurPx > 2) { for (let k = 0; k < 8; k++) { ctx.globalAlpha = .3; ctx.beginPath(); ctx.arc(x + w * (0.55 + k * 0.05), y + h * 0.35, 9 + blurPx, 0, 6.2832); ctx.fill(); } ctx.globalAlpha = 1; }
+    else { for (let k = 0; k < 8; k++) { ctx.beginPath(); ctx.arc(x + w * (0.55 + k * 0.05), y + h * 0.35, 7, 0, 6.2832); ctx.fill(); } }
+  };
+  switch (key) {
+    case 'exposure':
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('Tiga tingkat exposure dengan pengaturan yang sama', 14, 17);
+      frame(14, 200, '−2 EV · TOO DARK (underexposed)', (x, y, w, h) => miniScene(x, y, w, h, 0.25, 0, 0));
+      frame(230, 200, '0 EV · WELL EXPOSED (balanced)', (x, y, w, h) => miniScene(x, y, w, h, 1, 0, 0));
+      frame(446, 200, '+2 EV · TOO BRIGHT (overexposed)', (x, y, w, h) => miniScene(x, y, w, h, 3.4, 0, 0));
+      break;
+    case 'aperture':
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('Bukaan lebar (f/1.4) vs sempit (f/16)', 14, 17);
+      const iris = (cx, r, lbl) => {
+        ctx.fillStyle = '#0E1114'; ctx.beginPath(); ctx.arc(cx, 118, 62, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = '#2C343B';
+        for (let i = 0; i < 8; i++) {
+          const a0 = i * Math.PI / 4, a1 = (i + 1) * Math.PI / 4;
+          ctx.beginPath(); ctx.moveTo(cx + Math.cos(a0) * 62, 118 + Math.sin(a0) * 62);
+          ctx.arc(cx, 118, 62, a0, a1); ctx.closePath();
+          ctx.lineTo(cx + Math.cos(a1 + .7) * r, 118 + Math.sin(a1 + .7) * r);
+          ctx.lineTo(cx + Math.cos(a0 + .7) * r, 118 + Math.sin(a0 + .7) * r);
+          ctx.closePath(); ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(127,183,227,.5)'; ctx.beginPath(); ctx.arc(cx, 118, r, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = '#D9A441'; ctx.font = 'bold 15px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(lbl, cx, 200); ctx.textAlign = 'left';
+        /* sinar cahaya */
+        ctx.strokeStyle = 'rgba(243,231,196,.6)'; ctx.lineWidth = 2;
+        for (let k = -2; k <= 2; k++) { ctx.beginPath(); ctx.moveTo(cx + k * 12, 34); ctx.lineTo(cx + k * (10 + r * 0.4), 118 - r * 0.7); ctx.stroke(); }
+      };
+      iris(180, 54, 'f/1.4 · banyak cahaya · DoF dangkal');
+      iris(480, 14, 'f/16 · sedikit cahaya · DoF dalam');
+      break;
+    case 'fstop':
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('Skala f-stop: angka besar = bukaan kecil', 14, 17);
+      APERTURES.forEach((f, i) => {
+        const cx = 40 + i * 76, r = lerp(40, 5, i / (APERTURES.length - 1));
+        ctx.fillStyle = '#0E1114'; ctx.beginPath(); ctx.arc(cx, 108, 42, 0, 6.2832); ctx.fill();
+        ctx.fillStyle = '#39434B'; ctx.beginPath(); ctx.arc(cx, 108, r, 0, 6.2832); ctx.fill();
+        ctx.strokeStyle = '#5C666E'; ctx.lineWidth = 1.5; ctx.stroke();
+        ctx.fillStyle = '#D9A441'; ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center';
+        ctx.fillText(fLabel(f), cx, 174);
+        ctx.fillStyle = '#6E7780'; ctx.font = '10px system-ui';
+        ctx.fillText((Math.pow(2, i) ) + '×', cx, 194);
+        ctx.textAlign = 'left';
+      });
+      ctx.fillStyle = '#A5ADB5'; ctx.font = '11px system-ui';
+      ctx.fillText('Setiap langkah ke kanan = cahaya ÷2 (−1 stop)', 14, 216);
+      break;
+    case 'dof':
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('Depth of Field: lebar vs sempit', 14, 17);
+      frame(14, 300, 'f/2.0 — SHALLOW: subjek tajam, latar blur (bokeh)', (x, y, w, h) => miniScene(x, y, w, h, 1, 9, 0));
+      frame(346, 300, 'f/16 — DEEP: hampir semua bagian tajam', (x, y, w, h) => miniScene(x, y, w, h, 1, 0.4, 0));
+      break;
+    case 'shutter':
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('Shutter cepat membebukan gerakan', 14, 17);
+      const trail = (x, y, w, h, len) => {
+        ctx.fillStyle = '#141A20'; ctx.fillRect(x, y, w, h);
+        const g = ctx.createLinearGradient(x + 40 - len, y + h / 2, x + 40, y + h / 2);
+        g.addColorStop(0, 'rgba(217,164,65,0)'); g.addColorStop(1, 'rgba(217,164,65,.85)');
+        ctx.fillStyle = g; ctx.fillRect(x + 40 - len, y + h / 2 - 9, len, 18);
+        ctx.fillStyle = '#D9A441'; ctx.beginPath(); ctx.arc(x + 40, y + h / 2, 13, 0, 6.2832); ctx.fill();
+        ctx.strokeStyle = '#8A5A18'; ctx.lineWidth = 2; ctx.stroke();
+      };
+      frame(14, 300, '1/1000s — objek BEKU, cahaya sedikit', (x, y, w, h) => trail(x, y, w, h, 2));
+      frame(346, 300, '1/15s — jejak MOTION BLUR, cahaya banyak', (x, y, w, h) => trail(x, y, w, h, w - 90));
+      break;
+    case 'motion':
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('Panjang jejak gerakan ∝ durasi rana', 14, 17);
+      SHUTTERS.filter((s, i) => [2, 5, 7, 9, 12, 15].includes(i)).forEach((s, i) => {
+        const y = 44 + i * 29, len = clamp(motionBlurLen(s.v) * 1.4, 3, 420);
+        ctx.fillStyle = '#1B2026'; ctx.fillRect(14, y - 11, W - 28, 24);
+        ctx.fillStyle = '#A5ADB5'; ctx.font = '12px monospace';
+        ctx.fillText(s.l.padEnd(8), 22, y + 1);
+        const g = ctx.createLinearGradient(110, 0, 110 + len, 0);
+        g.addColorStop(0, 'rgba(217,164,65,.15)'); g.addColorStop(1, 'rgba(217,164,65,.95)');
+        ctx.fillStyle = g; ctx.fillRect(110, y - 7, len, 14);
+        ctx.fillStyle = '#D9A441'; ctx.beginPath(); ctx.arc(110 + len, y, 7, 0, 6.2832); ctx.fill();
+      });
+      break;
+    case 'iso':
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('Penguatan sinyal & noise pada area gelap', 14, 17);
+      [[100, 'ISO 100 — bersih'], [800, 'ISO 800 — mulai terlihat'], [6400, 'ISO 6400 — kasar']].forEach((p, i) => {
+        const x = 14 + i * 216;
+        frame(x, 200, p[1], (fx, fy, fw, fh) => miniScene(fx, fy, fw, fh, 1 + i * 0.35, 0, noiseSigma(p[0]) * 1.6));
+      });
+      break;
+    case 'noise':
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('Noise lebih terlihat di area gelap (shadow)', 14, 17);
+      const crop = (x, iso) => {
+        const w = 300, h = 130;
+        for (let yy = 0; yy < h; yy++) for (let xx = 0; xx < w; xx++) {
+          const i2 = (yy * w + xx) * 4;
+          const base = 30 + (xx / w) * 200;
+          const lum = base / 255;
+          const n = noiseSigma(iso) * (1 + 0.95 * (1 - lum)) * (rnd() - .5) * 2;
+          const v = clamp(base + n, 0, 255);
+          ctx.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')';
+          ctx.fillRect(x + xx, 44 + yy, 1, 1);
+        }
+        ctx.fillStyle = '#A5ADB5'; ctx.font = '11px system-ui'; ctx.textAlign = 'center';
+        ctx.fillText('ISO ' + iso, x + w / 2, H - 16); ctx.textAlign = 'left';
+      };
+      crop(14, 400); crop(346, 6400);
+      break;
+    case 'stops':
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('1 stop = 2× cahaya · −1 stop = ½ cahaya', 14, 17);
+      [0, 1, 2, 3, 4].forEach(i => {
+        const y = 46 + i * 34, w = 60 * Math.pow(2, i) / 16 * 4;
+        ctx.fillStyle = '#1B2026'; ctx.fillRect(14, y - 12, W - 28, 27);
+        ctx.fillStyle = '#D9A441'; ctx.fillRect(96, y - 8, Math.min(w, W - 200), 19);
+        ctx.fillStyle = '#F5F5F0'; ctx.font = '12px monospace';
+        ctx.fillText((i === 0 ? 'base' : '+' + i + ' stop'), 22, y + 2);
+        ctx.fillStyle = '#B9D78A';
+        ctx.fillText(Math.pow(2, i) + '× cahaya', Math.min(96 + w, W - 110), y + 2);
+      });
+      break;
+    case 'comp':
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('Meter menunjuk 0 EV — kompensasi menggesernya', 14, 17);
+      const meter = (y, needle, lbl) => {
+        ctx.fillStyle = '#1B2026'; ctx.fillRect(60, y - 24, W - 120, 48);
+        for (let v = -3; v <= 3; v++) {
+          const x = 80 + ((v + 3) / 6) * (W - 160);
+          ctx.fillStyle = v === 0 ? '#B9D78A' : '#4A545C'; ctx.fillRect(x - 1, y - 14, 2, 28);
+          ctx.fillStyle = '#A5ADB5'; ctx.font = '10px monospace'; ctx.textAlign = 'center';
+          ctx.fillText(v > 0 ? '+' + v : v, x, y + 24); ctx.textAlign = 'left';
+        }
+        const nx = 80 + ((clamp(needle, -3, 3) + 3) / 6) * (W - 160);
+        ctx.fillStyle = '#D9A441'; ctx.beginPath(); ctx.moveTo(nx, y - 20); ctx.lineTo(nx - 8, y - 34); ctx.lineTo(nx + 8, y - 34); ctx.closePath(); ctx.fill();
+        ctx.fillRect(nx - 1.5, y - 20, 3, 34);
+        ctx.fillStyle = '#F5F5F0'; ctx.font = '11px system-ui'; ctx.fillText(lbl, W - 210, y + 4);
+      };
+      meter(78, 0, 'Scene terang → foto overexposed');
+      meter(166, -1.6, 'Kompensasi −1.6 EV → kembali normal');
+      break;
+    case 'equiv':
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('Kecerahan sama (0 EV), karakter berbeda', 14, 17);
+      frame(14, 300, 'f/2.8 · 1/1000 · ISO 100 → latar blur, gerakan beku', (x, y, w, h) => miniScene(x, y, w, h, 1, 8, 0));
+      frame(346, 300, 'f/8 · 1/125 · ISO 100 → latar tajam, gerakan halus', (x, y, w, h) => miniScene(x, y, w, h, 1, 0.5, 0));
+      break;
+    case 'real': {
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('Pilih prioritas visual, lalu seimbangkan dua sisi lain', 14, 17);
+      const cx = W / 2, top = 46, bot = H - 40, half = 200;
+      ctx.strokeStyle = '#D9A441'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(cx, top); ctx.lineTo(cx - half, bot); ctx.lineTo(cx + half, bot); ctx.closePath(); ctx.stroke();
+      ctx.fillStyle = '#B9D78A'; ctx.font = 'bold 11px system-ui'; ctx.textAlign = 'center';
+      ctx.fillText('APERTURE', cx - half * 0.6, bot + 16);
+      ctx.fillText('SHUTTER', cx + half * 0.6, bot + 16);
+      ctx.fillText('ISO', cx, top - 12);
+      ctx.fillStyle = '#F5F5F0'; ctx.font = 'bold 13px system-ui';
+      ctx.fillText('EXPOSURE', cx, (top + bot) / 2);
+      ctx.fillStyle = '#A5ADB5'; ctx.font = '11px system-ui';
+      ctx.fillText('Portrait: f/2 · 1/2000 · ISO 100', cx - half * 0.6, (top + bot) / 2 + 26);
+      ctx.fillText('Malam+tripod: f/8 · 4" · ISO 100', cx + half * 0.6, (top + bot) / 2 + 26);
+      ctx.textAlign = 'left';
+      break;
+    }
+  }
+}
+
+/* =====================================================================
+   22. MINI QUIZ
+   ===================================================================== */
+const QUIZ = [
+  { q: 'Exposure dalam fotografi berarti…', o: ['Banyaknya cahaya yang diterima sensor kamera', 'Jarak lensa ke subjek', 'Ukuran file foto', 'Warna dominan foto'], a: 0,
+    e: 'Exposure adalah total cahaya yang masuk ke sensor, ditentukan oleh aperture, shutter speed, dan ISO.', t: 'exposure' },
+  { q: 'Aperture mengontrol apa saja?', o: ['Hanya warna foto', 'Bukaan lensa dan depth of field', 'Hanya kecerahan layar', 'Ukuran megapiksel'], a: 1,
+    e: 'Aperture mengatur bukaan diafragma: menentukan jumlah cahaya sekaligus kedalaman ketajaman (DoF).', t: 'aperture' },
+  { q: 'Manakah bukaan lensa paling lebar?', o: ['f/22', 'f/16', 'f/4', 'f/1.4'], a: 3,
+    e: 'Angka f kecil = bukaan besar. f/1.4 jauh lebih lebar daripada f/22.', t: 'fstop' },
+  { q: 'Depth of field paling dangkal (background paling blur) terjadi pada…', o: ['Aperture sempit f/16', 'Aperture lebar f/1.4', 'ISO 6400', 'Shutter 1/4000'], a: 1,
+    e: 'Aperture lebar membuat area tajam sempit → subjek tajam, latar kabur (bokeh).', t: 'dof' },
+  { q: 'Shutter speed 1/1000 detik paling cocok untuk…', o: ['Membekukan gerakan cepat', 'Membuat light trail panjang', 'Memotret bintang 30 detik', 'Mengurangi noise'], a: 0,
+    e: 'Rana sangat cepat menerima cahaya sebentar sehingga gerakan terekam beku.', t: 'shutter' },
+  { q: 'Motion blur terjadi ketika…', o: ['ISO terlalu rendah', 'Rana lambat dan objek bergerak', 'Aperture terlalu sempit', 'Warna foto kurang'], a: 1,
+    e: 'Selama rana terbuka, pergerakan objek direkam sebagai jejak kabur — itulah motion blur.', t: 'motion' },
+  { q: 'Apa fungsi ISO?', o: ['Memperkuat sinyal sensor', 'Membuka diafragma', 'Mempercepat rana', 'Menajamkan lensa'], a: 0,
+    e: 'ISO adalah penguatan sinyal. Tidak menambah cahaya fisik, hanya memperkuat sinyal yang sudah diterima.', t: 'iso' },
+  { q: 'Digital noise paling mudah terlihat pada…', o: ['Area terang dengan ISO 100', 'Area gelap dengan ISO tinggi', 'Area putih dengan tripod', 'Foto berwarna merah'], a: 1,
+    e: 'Di area gelap sinyalnya lemah; penguatan ISO tinggi ikut mengangkat gangguan → butiran noise.', t: 'noise' },
+  { q: 'Satu stop exposure berarti…', o: ['Cahaya dua kali atau setengahnya', 'Perubahan warna', 'Perpindahan lensa', 'Penyimpanan RAW'], a: 0,
+    e: 'Skala stop bersifat logaritmik: +1 stop = ×2 cahaya, −1 stop = ÷2 cahaya.', t: 'stops' },
+  { q: 'Kombinasi manakah yang setara exposure-nya (ISO sama)?', o: ['f/5.6 · 1/250 dan f/8 · 1/125', 'f/5.6 · 1/250 dan f/8 · 1/250', 'f/4 · 1/1000 dan f/5.6 · 1/1000', 'f/8 · 1/60 dan f/8 · 1/125'], a: 0,
+    e: 'f/5.6→f/8 = −1 stop, 1/250→1/125 = +1 stop. Keduanya saling menghapus → exposure setara.', t: 'equiv' },
+  { q: 'ISO 400 vs ISO 100 pada aperture & shutter yang sama membuat foto…', o: ['Lebih gelap 2 stop', 'Lebih terang 2 stop', 'Sama saja', 'Lebih blur'], a: 1,
+    e: 'ISO 100→400 = dua langkah stop = +2 EV, sehingga foto 2× lebih terang (2 stop).', t: 'iso' },
+  { q: 'Untuk foto produk yang tajam dan bersih, pilihan terbaik adalah…', o: ['ISO 6400 · f/1.4 · handheld', 'ISO 100 · f/8 · tripod', 'ISO 3200 · f/22 · handheld', 'ISO 100 · f/1.4 · 1/4000'], a: 1,
+    e: 'ISO rendah = tanpa noise, f/8 = DoF cukup dalam, tripod = aman memakai rana lambat di studio.', t: 'real' }
+];
+function renderQuiz() {
+  const st = state.quizState;
+  const box = $('quizStage');
+  if (st.done) {
+    const pct = Math.round((st.score / QUIZ.length) * 100);
+    const weak = [...new Set(st.wrong.map(i => QUIZ[i].t))];
+    box.innerHTML =
+      '<div class="score-ring" style="--p:' + pct + '"><div class="inner"><div class="num">' + st.score + '/' + QUIZ.length + '</div><div class="lbl">Skor ' + pct + '</div></div></div>' +
+      '<p style="text-align:center;font-size:15px">' +
+      (pct >= 90 ? 'Luar biasa! Kamu menguasai exposure triangle.' : pct >= 70 ? 'Bagus! Beberapa konsep masih perlu diperkuat.' : pct >= 50 ? 'Cukup. Pelajari lagi materi di bawah.' : 'Mari pelajari ulang materi inti sebelum mencoba lagi.') +
+      '</p>' +
+      (weak.length ? '<div class="learn-block"><h4>Materi yang masih perlu dipahami</h4><div class="example-chips">' +
+        weak.map(w => '<span>' + w.toUpperCase() + '</span>').join('') + '</div></div>' : '') +
+      '<ul class="review-list">' + QUIZ.map((q, i) => {
+        const ok = !st.wrong.includes(i);
+        return '<li><span class="' + (ok ? 'ok' : 'no') + '">' + (ok ? '✓' : '✗') + '</span><span>' + q.q + '</span></li>';
+      }).join('') + '</ul>' +
+      '<div class="quiz-foot"><span class="hint">Jawaban salah ditandai ✗ — pelajari kembali lewat menu LEARN.</span>' +
+      '<button class="btn btn-primary" id="quizRetry">↺ Ulangi Kuis</button></div>';
+    $('quizRetry').addEventListener('click', () => { state.quizState = { index: 0, score: 0, answered: false, wrong: [], done: false, picked: -1 }; renderQuiz(); });
+    return;
+  }
+  const q = QUIZ[st.index];
+  const pct = ((st.index + (st.answered ? 1 : 0)) / QUIZ.length) * 100;
+  box.innerHTML =
+    '<div class="quiz-top"><span>Soal ' + (st.index + 1) + ' / ' + QUIZ.length + '</span><span>Skor sementara: ' + st.score + '</span><span>Materi: ' + q.t.toUpperCase() + '</span></div>' +
+    '<div class="quiz-progress"><i style="width:' + pct + '%"></i></div>' +
+    '<div class="quiz-q">' + q.q + '</div>' +
+    '<div class="quiz-opts">' + q.o.map((o, i) => {
+      let cls = '';
+      if (st.answered) {
+        if (i === q.a) cls = ' correct';
+        else if (i === st.picked) cls = ' wrong';
+      }
+      return '<button class="quiz-opt' + cls + '" data-opt="' + i + '"' + (st.answered ? ' disabled' : '') + '><span class="key">' + 'ABCD'[i] + '</span>' + o + '</button>';
+    }).join('') + '</div>' +
+    '<div class="quiz-expl show ' + (st.answered ? (st.picked === q.a ? 'good' : 'bad') : '') + '" style="' + (st.answered ? '' : 'display:none') + '">' +
+    (st.answered ? (st.picked === q.a ? '<b class="accent2">Benar! ✓</b> ' : '<b style="color:var(--danger)">Belum tepat ✗</b> Jawaban yang benar: <b>' + 'ABCD'[q.a] + '</b>. ') + q.e : '') +
+    '</div>' +
+    '<div class="quiz-foot">' +
+    '<span class="hint">' + (st.answered ? (st.picked === q.a ? 'Pertahankan!' : 'Baca pembahasan di atas, ya.') : 'Pilih satu jawaban.') + '</span>' +
+    (st.answered ? '<button class="btn btn-primary" id="quizNext">' + (st.index === QUIZ.length - 1 ? 'Lihat Hasil →' : 'Soal Berikutnya →') + '</button>' : '') +
+    '</div>';
+  box.querySelectorAll('[data-opt]').forEach(b => b.addEventListener('click', () => answerQuiz(+b.dataset.opt)));
+  const nb = $('quizNext');
+  if (nb) nb.addEventListener('click', () => {
+    state.quizState.index++;
+    state.quizState.answered = false; state.quizState.picked = -1;
+    if (state.quizState.index >= QUIZ.length) { state.quizState.done = true; }
+    renderQuiz();
+  });
+}
+function answerQuiz(i) {
+  const st = state.quizState, q = QUIZ[st.index];
+  if (st.answered) return;
+  st.answered = true; st.picked = i;
+  if (i === q.a) { st.score++; pushFeedback('exp', 'Quiz · Soal ' + (st.index + 1), 'Jawaban benar: ' + q.e); }
+  else { st.wrong.push(st.index); pushFeedback('exp', 'Quiz · Soal ' + (st.index + 1), 'Belum tepat. ' + q.e); }
+  renderQuiz();
+}
+/* =====================================================================
+   23. NAVIGASI, MODAL & KONTROL
+   ===================================================================== */
+function switchView(name) {
+  state.view = name;
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+  document.querySelectorAll('.nav-btn').forEach(b => {
+    const on = b.dataset.view === name;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  });
+  if (name === 'experiment' && eqCombos.length) renderEquivalentLab();
+  if (name === 'quiz') renderQuiz();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function openModal(id) { $(id).classList.add('open'); }
+function closeModal(id) { $(id).classList.remove('open'); }
+function syncControls() {
+  $('apSlider').value = apIndex(state.apertureValue);
+  $('shSlider').value = shIndex(state.shutterValue);
+  $('isoSlider').value = isoIndex(state.isoValue);
+  updateRangeFill($('apSlider')); updateRangeFill($('shSlider')); updateRangeFill($('isoSlider'));
+  $('lightingSelect').value = state.lightingCondition;
+  const tg = $('tripodToggle');
+  tg.classList.toggle('on', state.tripodMode);
+  tg.setAttribute('aria-checked', state.tripodMode ? 'true' : 'false');
+  tg.querySelector('.txt').innerHTML = state.tripodMode
+    ? 'Tripod<small>Kamera stabil — goyangan rana hilang, motion blur subjek tetap muncul</small>'
+    : 'Handheld<small>Kamera dipegang tangan — waspada camera shake</small>';
+  updateSceneLabel();
+}
+function setAperture(v, feedback) {
+  state.apertureValue = v; updateAll('ap');
+  if (feedback) {
+    pushFeedback('set', 'Aperture · ' + fLabel(v),
+      v <= 2.8 ? 'Anda memilih ' + fLabel(v) + '. Bukaan lensa lebih lebar sehingga lebih banyak cahaya masuk. Background juga semakin blur.'
+      : v >= 11 ? 'Anda memilih ' + fLabel(v) + '. Bukaan lebih sempit, cahaya berkurang, dan hampir seluruh pemandangan menjadi tajam.'
+      : 'Anda memilih ' + fLabel(v) + '. Bukaan diafragma seimbang — cahaya dan ketajaman berada di tengah.');
+    feedbackExposure();
+  }
+}
+function setShutter(v, feedback) {
+  state.shutterValue = v; updateAll('sh');
+  if (feedback) {
+    pushFeedback('set', 'Shutter · ' + shLabel(v),
+      v <= 1 / 500 ? 'Anda mengubah shutter menjadi ' + shLabel(v) + ' detik. Gerakan lebih mudah dibekukan, tetapi cahaya yang diterima sensor menjadi lebih sedikit.'
+      : v >= 1 / 30 ? 'Anda mengubah shutter menjadi ' + shLabel(v) + ' detik. Cahaya diterima lebih lama, gerakan meninggalkan jejak panjang, dan goyangan tangan ikut terekam.'
+      : 'Anda mengubah shutter menjadi ' + shLabel(v) + ' detik. Durasi seimbang: cahaya cukup dan gerakan normal relatif tajam.');
+    feedbackExposure();
+  }
+}
+function setISO(v, feedback) {
+  state.isoValue = v; updateAll('iso');
+  if (feedback) {
+    pushFeedback('set', 'ISO · ' + v,
+      v <= 200 ? 'ISO ' + v + ' memberikan penguatan sinyal rendah. Foto sedikit lebih gelap pada pengaturan sama, tetapi noise minimal dan detail bersih.'
+      : v >= 3200 ? 'ISO ' + v + ' memberikan penguatan sinyal sangat tinggi. Foto jauh lebih terang, tetapi digital noise meningkat tajam pada area gelap.'
+      : 'ISO ' + v + ' memberikan penguatan sinyal lebih tinggi. Foto terlihat lebih terang, tetapi digital noise juga meningkat.');
+    feedbackExposure();
+  }
+}
+function resetSimulator() {
+  state.apertureValue = 8; state.shutterValue = 1 / 125; state.isoValue = 100;
+  state.sceneType = 'A'; state.lightingCondition = 'shade'; state.tripodMode = false;
+  state.activeChallenge = null; state.feedback = []; state.compareSel = [];
+  $('lightingNote').textContent = '';
+  $('bestProductNote').textContent = '';
+  $('compensateHint').textContent = '';
+  $('chResult').className = 'ch-result';
+  syncControls();
+  renderGallery(); renderChallenges();
+  updateAll();
+  pushFeedback('set', 'Reset', 'Simulator dikembalikan ke pengaturan referensi: f/8 · 1/125 · ISO 100 · Open Shade (0 EV).');
+}
+
+/* =====================================================================
+   24. EVENT LISTENERS
+   ===================================================================== */
+function wireEvents() {
+  /* navigasi */
+  document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
+  /* scene */
+  document.querySelectorAll('#sceneRow .chip').forEach(c => c.addEventListener('click', () => {
+    state.sceneType = c.dataset.scene;
+    updateSceneLabel();
+    const sc = SCENES[sceneIdx(state.sceneType)];
+    pushFeedback('set', 'Scene ' + sc.id + ' · ' + sc.name, 'Berpindah ke scene ' + sc.name.toLowerCase() + ' — ' + sc.desc + '.');
+    updateAll();
+    if (eqCombos.length) renderEquivalentLab();
+  }));
+  /* lighting */
+  $('lightingSelect').addEventListener('change', e => {
+    state.lightingCondition = e.target.value;
+    const L = LIGHTINGS[lightIdx(state.lightingCondition)];
+    $('lightingNote').textContent = 'Ambient light has changed. Adjust your exposure settings. — ' + L.note;
+    pushFeedback('exp', 'Lighting · ' + L.name, 'Ambient light berubah menjadi ' + L.name + ' (' + fmtEV(L.ev) + ' EV). Sesuaikan pengaturan agar kembali seimbang.');
+    updateAll();
+    feedbackExposure();
+    if (eqCombos.length) renderEquivalentLab();
+  });
+  /* sliders */
+  $('apSlider').addEventListener('input', e => { state.apertureValue = APERTURES[+e.target.value]; updateAll('ap'); });
+  $('apSlider').addEventListener('change', () => setAperture(state.apertureValue, true));
+  $('shSlider').addEventListener('input', e => { state.shutterValue = SHUTTERS[+e.target.value].v; updateAll('sh'); });
+  $('shSlider').addEventListener('change', () => setShutter(state.shutterValue, true));
+  $('isoSlider').addEventListener('input', e => { state.isoValue = ISOS[+e.target.value]; updateAll('iso'); });
+  $('isoSlider').addEventListener('change', () => setISO(state.isoValue, true));
+  /* tripod */
+  const tg = $('tripodToggle');
+  const toggleTripod = () => {
+    state.tripodMode = !state.tripodMode;
+    syncControls(); updateAll('sh');
+    pushFeedback('set', 'Support · ' + (state.tripodMode ? 'TRIPOD' : 'HANDHELD'),
+      state.tripodMode ? 'Tripod aktif: goyangan kamera hilang. Motion blur pada subjek bergerak tetap muncul sesuai shutter.'
+                        : 'Handheld: pada shutter lambat, goyangan tangan akan terekam sebagai camera shake.');
+  };
+  tg.addEventListener('click', toggleTripod);
+  tg.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTripod(); } });
+  /* capture & header */
+  $('btnTakePhoto').addEventListener('click', () => capturePhoto());
+  $('btnHelp').addEventListener('click', () => openModal('helpModal'));
+  $('btnReset').addEventListener('click', resetSimulator);
+  /* modal */
+  document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', () => closeModal(b.dataset.close)));
+  document.querySelectorAll('.modal').forEach(m => m.addEventListener('click', e => { if (e.target === m) closeModal(m.id); }));
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(m => closeModal(m.id)); });
+  /* stop simulator */
+  $('apStopMinus').addEventListener('click', () => moveStop('ap', -1));
+  $('apStopPlus').addEventListener('click', () => moveStop('ap', +1));
+  $('shStopMinus').addEventListener('click', () => moveStop('sh', -1));
+  $('shStopPlus').addEventListener('click', () => moveStop('sh', +1));
+  $('isoStopMinus').addEventListener('click', () => moveStop('iso', -1));
+  $('isoStopPlus').addEventListener('click', () => moveStop('iso', +1));
+  $('btnCompensate').addEventListener('click', autoCompensate);
+  /* equivalent lab & product lab */
+  $('btnGenerateEq').addEventListener('click', generateEquivalentSettings);
+  $('btnBestProduct').addEventListener('click', applyBestProductSettings);
+  /* gallery */
+  $('galleryGrid').addEventListener('click', e => {
+    const card = e.target.closest('[data-id]'); if (!card) return;
+    const act = e.target.dataset.act || e.target.closest('[data-act]')?.dataset.act;
+    if (!act || act === 'dl') return;
+    const id = card.dataset.id;
+    if (act === 'view') openPhoto(id);
+    else if (act === 'cmp') toggleCompare(id);
+    else if (act === 'del') deletePhoto(id);
+  });
+  $('btnCompare').addEventListener('click', openCompare);
+  $('btnClearCompare').addEventListener('click', () => { state.compareSel = []; renderGallery(); });
+  $('photoDelete').addEventListener('click', e => deletePhoto(e.target.dataset.id));
+  /* challenges */
+  $('chGrid').addEventListener('click', e => {
+    const btn = e.target.closest('[data-chact]'); if (!btn) return;
+    const card = e.target.closest('[data-ch]'); const id = card.dataset.ch;
+    if (btn.dataset.chact === 'start') startChallenge(id);
+    else {
+      if (state.activeChallenge !== id) { startChallenge(id); pushFeedback('set', 'Challenge', 'Pengaturan tantangan dimuat. Sesuaikan exposure lalu tekan TAKE PHOTO.'); }
+      else capturePhoto();
+    }
+  });
+  /* learn */
+  $('learnNav').addEventListener('click', e => {
+    const b = e.target.closest('[data-topic]'); if (!b) return;
+    renderLearnTopic(+b.dataset.topic);
+  });
+}
+
+/* =====================================================================
+   25. INIT
+   ===================================================================== */
+function init() {
+  buildMeterScale();
+  /* scene chips */
+  $('sceneRow').innerHTML = SCENES.map(s =>
+    '<button class="chip' + (s.id === 'A' ? ' active' : '') + '" data-scene="' + s.id + '" aria-label="Pilih scene ' + s.name + '"><span class="k">' + s.id + '</span>' + s.name + '</button>').join('');
+  /* lighting select */
+  $('lightingSelect').innerHTML = LIGHTINGS.map(l =>
+    '<option value="' + l.id + '">' + l.name + ' (' + (l.ev > 0 ? '+' : '') + l.ev + ' EV)</option>').join('');
+  $('lightingSelect').value = state.lightingCondition;
+  wireEvents();
+  renderGallery();
+  renderChallenges();
+  renderLearnNav();
+  renderLearnTopic(0);
+  renderQuiz();
+  /* kombinasi awal equivalent lab */
+  generateEquivalentSettings();
+  state.feedback = [];
+  syncControls();
+  updateAll();
+  pushFeedback('set', 'Selamat datang', 'Digital Exposure Lab siap. Ubah aperture, shutter, dan ISO pada panel kanan — pratinjau, meter, histogram, dan feedback akan diperbarui seketika.');
+  requestAnimationFrame(mainLoop);
+}
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</main>
+</body>
+</html>
